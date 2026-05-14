@@ -168,9 +168,9 @@ export default function MemoryTimeline({ onBack, coupleId, currentUser, locale =
               const displayImages = memory.image_urls?.length > 0 ? memory.image_urls : (memory.image_url ? [memory.image_url] : []);
 
               return (
-                <div key={memory.id} className="relative pl-4 md:pl-6 animate-fade-in">
+                <div key={memory.id} className="relative pl-5 md:pl-6 animate-fade-in">
                   <div className="absolute w-3 h-3 md:w-4 md:h-4 bg-theme-400 rounded-full -left-[7px] md:-left-[9px] top-1.5 md:top-1 border-[3px] md:border-4 border-white shadow-sm"></div>
-                  <div className="bg-white p-4 md:p-5 rounded-xl md:rounded-2xl shadow-sm border border-slate-50 relative group">
+                  <div className="bg-white p-3 md:p-5 rounded-xl md:rounded-2xl shadow-sm border border-slate-50 relative group">
                     <div className="flex flex-wrap gap-2 mb-3">
                       <span className="inline-block px-3 py-1 bg-theme-50 text-theme-600 font-bold text-[10px] uppercase tracking-wider rounded-full">{new Date(memory.memory_date).toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-US')}</span>
                       {memory.location && <span className="inline-flex items-center gap-1 px-3 py-1 bg-slate-50 text-slate-500 font-bold text-[10px] uppercase tracking-wider rounded-full border border-slate-100">{memory.location}</span>}
@@ -179,7 +179,7 @@ export default function MemoryTimeline({ onBack, coupleId, currentUser, locale =
                     {displayImages.length > 0 && (
                       <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 mb-4 pb-2 custom-scrollbar hide-scrollbar-mobile">
                         {displayImages.map((imgUrl: string, idx: number) => (
-                          <div key={idx} onClick={() => setSelectedImage(imgUrl)} className="w-full shrink-0 snap-center h-56 bg-slate-100 rounded-xl overflow-hidden border border-slate-50 cursor-pointer">
+                          <div key={idx} onClick={() => setSelectedImage(imgUrl)} className="w-full shrink-0 snap-center h-64 md:h-72 bg-slate-100 rounded-xl overflow-hidden border border-slate-50 cursor-pointer">
                             <img src={imgUrl} className="w-full h-full object-cover hover:scale-105 transition-transform" />
                           </div>
                         ))}
