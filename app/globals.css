@@ -1,26 +1,98 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  --font-sans: var(--font-base), sans-serif;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* 1. ANIMATIONS */
+  --animate-fade-in: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  --animate-blob: blob 7s infinite;
+  --animate-fall: fall linear infinite;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes blob {
+    0% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0px, 0px) scale(1); }
+  }
+
+  @keyframes fall {
+    0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* 2. CHỈ CẦN ĐÚNG 1 BIẾN GỐC CHO TOÀN BỘ APP */
+:root {
+  --theme-primary: #ec4899; /* Màu hồng mặc định lúc mới vào */
+}
+
+/* 3. TỰ ĐỘNG PHA MÀU (COLOR-MIX) DỰA TRÊN MÀU BẠN CHỌN */
+@layer utilities {
+  /* Chữ và Nền đậm */
+  .text-theme-400, .text-theme-500, .text-theme-600 {
+    color: var(--theme-primary) !important;
+  }
+  .bg-theme-400, .bg-theme-500 {
+    background-color: var(--theme-primary) !important;
+  }
+  
+  /* Nền nhạt (Tự động pha trong suốt 5% và 15%) */
+  .bg-theme-50 {
+    background-color: color-mix(in srgb, var(--theme-primary) 5%, transparent) !important;
+  }
+  .bg-theme-100 {
+    background-color: color-mix(in srgb, var(--theme-primary) 15%, transparent) !important;
+  }
+
+  /* Viền nhạt */
+  .border-theme-50, .border-theme-100, .border-theme-200 {
+    border-color: color-mix(in srgb, var(--theme-primary) 20%, transparent) !important;
+  }
+
+  /* Focus ring */
+  .ring-theme-200 {
+    --tw-ring-color: color-mix(in srgb, var(--theme-primary) 40%, transparent) !important;
+  }
+
+  /* Đổ bóng phát sáng (Glow Shadow) */
+  .shadow-cute {
+    box-shadow: 0 10px 25px -5px color-mix(in srgb, var(--theme-primary) 20%, transparent), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+  }
+  .shadow-cute-lg {
+    box-shadow: 0 20px 25px -5px color-mix(in srgb, var(--theme-primary) 30%, transparent), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+  }
+
+  /* NÚT BẤM (Ghi đè triệt để) */
+  .btn-cute {
+    background: var(--theme-primary) !important;
+    color: white !important;
+    border-radius: 9999px !important;
+    box-shadow: 0 4px 14px 0 color-mix(in srgb, var(--theme-primary) 35%, transparent) !important;
+    transition: all 0.3s ease-in-out !important;
+    cursor: pointer !important;
+    font-weight: 700 !important;
+    border: none !important;
+  }
+
+  .btn-cute:hover {
+    transform: translateY(-2px) !important;
+    filter: brightness(1.1) !important;
+    box-shadow: 0 6px 20px 0 color-mix(in srgb, var(--theme-primary) 50%, transparent) !important;
+  }
+
+  /* Tiện ích linh tinh */
+  .animation-delay-2000 { animation-delay: 2s; }
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { 
+    background: color-mix(in srgb, var(--theme-primary) 30%, transparent); 
+    border-radius: 10px; 
+  }
 }
