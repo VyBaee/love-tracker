@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { translations, Locale } from '../lib/translations';
 import ProfileModal from './ProfileModal';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 
 export default function SingleDashboard({ session, myProfile, onPaired, onProfileUpdated }: any) {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -17,7 +19,7 @@ export default function SingleDashboard({ session, myProfile, onPaired, onProfil
   const [toastMessage, setToastMessage] = useState('');
 
   // Cơ chế ngôn ngữ màn Single: Mặc định là 'vi' (cơ chế set bg color)
-  const [locale, setLocale] = useState<Locale>('vi'); 
+  const [locale, setLocale] = useState<Locale>('vi');
   const t = translations[locale].singleDashboard;
 
   const displayName = myProfile?.display_name || session.user.user_metadata?.username || 'Người dùng';
@@ -30,6 +32,59 @@ export default function SingleDashboard({ session, myProfile, onPaired, onProfil
       }).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  useEffect(() => {
+    // DÒNG NÀY ĐỂ TEST (Xong thì xoá đi nhé)
+    // localStorage.removeItem('love_tracker_single_tutorial');
+
+    // Kiểm tra xem đã xem chưa
+    const hasSeenTutorial = localStorage.getItem('love_tracker_single_tutorial');
+
+    if (!hasSeenTutorial) {
+      const driverObj = driver({
+        showProgress: true,
+        animate: true,
+        nextBtnText: 'Tiếp theo ➔',
+        prevBtnText: '⬅ Lùi lại',
+        doneBtnText: 'Bắt đầu thôi! 💖',
+        steps: [
+          {
+            // KHÔNG CÓ element -> Sẽ hiện to đùng ở giữa màn hình
+            popover: {
+              title: '👋 Xin chào Người mới!',
+              description: 'Chào mừng bạn đến với Love Tracker. Mình sẽ hướng dẫn bạn nhanh cách sử dụng trang này để đón "nửa kia" về nhà chung nhé!',
+              align: 'center'
+            }
+          },
+          {
+            element: '#pair-section',
+            popover: { title: '💞 Ghép Đôi Nào', description: 'Bạn hãy nhập mã số (ID) của người ấy vào đây để gửi lời mời về chung một nhà nha.', side: "bottom", align: 'center' }
+          },
+          {
+            element: '#edit-profile-btn',
+            popover: { title: '🎨 Trang trí Profile', description: 'Hãy đổi một chiếc Avatar thật xinh xắn và cập nhật tên của bạn để người ấy dễ dàng nhận ra nhé.', side: "bottom", align: 'center' }
+          },
+          {
+            element: '#notification-btn',
+            popover: { title: '🔔 Hòm Thư Chờ', description: 'Nếu người ấy gửi lời mời ghép đôi cho bạn trước, nó sẽ nằm ở đây. Nhớ kiểm tra thường xuyên!', side: "bottom", align: 'center' }
+          },
+          {
+            element: '#lang-btn',
+            popover: { title: '🌍 Ngôn Ngữ', description: 'Bạn có thể đổi sang Tiếng Anh hoặc Tiếng Việt ở góc này cho dễ dùng.', side: "left", align: 'center' }
+          },
+        ],
+        onDestroyStarted: () => {
+          localStorage.setItem('love_tracker_single_tutorial', 'true');
+          driverObj.destroy();
+        }
+      });
+
+      // Để 800ms chờ trang load xong animation rồi hẵng chạy
+      setTimeout(() => {
+        driverObj.drive();
+      }, 800);
+    }
+  }, []); // Cứ load trang Single lên là chạy
 
   const fetchInvites = async () => {
     const { data } = await supabase.from('pairing_invites').select('*, sender:profiles!sender_id(display_name)').eq('receiver_email', session.user.email).eq('status', 'pending');
@@ -73,23 +128,23 @@ export default function SingleDashboard({ session, myProfile, onPaired, onProfil
   return (
     <>
       {toastMessage && (
-        <div className="fixed top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-lg z-[100] animate-fade-in text-sm font-medium">
-          {toastMessage}
+        <div className="fixed top-10 left-1/2 -translate-x-1/2 bg-white border-2 border-theme-200 text-theme-600 px-6 py-3 rounded-2xl shadow-cute-lg z-[100] animate-bounce text-sm font-bold flex items-center gap-2 w-max max-w-[90%]">
+          <span className="text-center">{toastMessage}</span>
         </div>
       )}
 
       {/* TOP RIGHT MENU - TÍCH HỢP CHO MÀN SINGLE (Y HỆT HÌNH ẢNH) */}
       <div className="fixed top-6 right-8 z-50 flex items-center gap-4">
         {/* Bộ chuyển ngôn ngữ (đổi cục bộ trong màn single) */}
-        <div className="flex items-center gap-1 bg-white/80 backdrop-blur-md p-1.5 rounded-2xl border border-slate-100 shadow-sm">
-          <button 
+        <div id="lang-btn" className="flex items-center gap-1 bg-white/80 backdrop-blur-md p-1.5 rounded-2xl border border-slate-100 shadow-sm">
+          <button
             onClick={() => setLocale('vi')}
             className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all ${locale === 'vi' ? 'bg-theme-100 scale-105 shadow-inner' : 'hover:bg-slate-50 opacity-60 grayscale'}`}
             title={t.labelVI}
           >
             <img src="https://flagcdn.com/w40/vn.png" alt="VN" className="w-4 h-auto rounded-[2px] shadow-sm" />
           </button>
-          <button 
+          <button
             onClick={() => setLocale('en')}
             className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all ${locale === 'en' ? 'bg-theme-100 scale-105 shadow-inner' : 'hover:bg-slate-50 opacity-60 grayscale'}`}
             title={t.labelUS}
@@ -99,8 +154,9 @@ export default function SingleDashboard({ session, myProfile, onPaired, onProfil
         </div>
 
         {/* Nút thông báo */}
-        <button 
-          onClick={() => setShowNotifModal(true)} 
+        <button
+          id="notification-btn"
+          onClick={() => setShowNotifModal(true)}
           className="w-12 h-12 rounded-full bg-white/80 backdrop-blur-md border border-slate-100 shadow-cute flex items-center justify-center text-slate-400 hover:text-theme-500 hover:scale-105 transition-all relative"
           title={t.labelNotif}
         >
@@ -112,8 +168,9 @@ export default function SingleDashboard({ session, myProfile, onPaired, onProfil
 
         {/* Avatar Dropdown */}
         <div className="relative">
-          <button 
-            onClick={() => setShowProfileMenu(!showProfileMenu)} 
+          <button
+            id="edit-profile-btn"
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
             className="w-12 h-12 rounded-full bg-white border border-slate-100 shadow-cute overflow-hidden flex items-center justify-center hover:scale-105 transition-transform"
           >
             {myProfile?.avatar_url ? (
@@ -128,14 +185,14 @@ export default function SingleDashboard({ session, myProfile, onPaired, onProfil
                 <p className="text-sm font-bold text-slate-700 truncate">{displayName}</p>
                 <p className="text-[11px] text-slate-500 truncate mt-0.5">{session.user.email}</p>
               </div>
-              <button 
-                onClick={() => { setShowProfileModal(true); setShowProfileMenu(false); }} 
+              <button
+                onClick={() => { setShowProfileModal(true); setShowProfileMenu(false); }}
                 className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 hover:bg-theme-50 transition-colors"
               >
                 {t.editProfileLabel || translations[locale].profile.edit}
               </button>
-              <button 
-                onClick={() => supabase.auth.signOut()} 
+              <button
+                onClick={() => supabase.auth.signOut()}
                 className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 hover:bg-theme-50 transition-colors"
               >
                 {t.logoutLabel || translations[locale].profile.logout}
@@ -154,10 +211,10 @@ export default function SingleDashboard({ session, myProfile, onPaired, onProfil
             </div>
             <h2 className="text-2xl font-black text-theme-600 mb-2">{t.welcomeTitle.replace('{name}', displayName)}</h2>
             <p className="text-sm text-slate-500 font-medium mb-10 px-4 leading-relaxed">
-              {t.emptyTitle}<br/>
+              {t.emptyTitle}<br />
               {t.emptyDesc}
             </p>
-            <button onClick={() => setShowInviteModal(true)} className="btn-cute px-8 py-4 text-sm font-bold w-full shadow-cute-lg">
+            <button id="pair-section" onClick={() => setShowInviteModal(true)} className="btn-cute px-8 py-4 text-sm font-bold w-full shadow-cute-lg">
               {t.btnInvite}
             </button>
           </div>
@@ -187,7 +244,7 @@ export default function SingleDashboard({ session, myProfile, onPaired, onProfil
             <h2 className="font-bold text-theme-600 text-lg mb-6 text-center border-b border-slate-100 pb-4 mt-2">
               {t.notifModalHeader}
             </h2>
-            
+
             <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar pr-1">
               {invites.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-slate-400 pt-10">
@@ -219,13 +276,13 @@ export default function SingleDashboard({ session, myProfile, onPaired, onProfil
       )}
 
       {/* Profile Modal */}
-      <ProfileModal 
+      <ProfileModal
         locale={locale} // Truyền locale cục bộ vào modal
-        isOpen={showProfileModal} 
-        onClose={() => setShowProfileModal(false)} 
-        myProfile={myProfile} 
-        session={session} 
-        onSaveSuccess={onProfileUpdated} 
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        myProfile={myProfile}
+        session={session}
+        onSaveSuccess={onProfileUpdated}
       />
     </>
   );

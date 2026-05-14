@@ -14,6 +14,8 @@ import SingleDashboard from '../components/SingleDashboard';
 import ProfileModal from '../components/ProfileModal';
 import { supabase } from '../lib/supabase';
 import { translations, Locale } from '../lib/translations';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 
 const getAge = (dob: string) => {
   if (!dob) return 0;
@@ -157,6 +159,57 @@ export default function Home() {
     calcTime(); const int = setInterval(calcTime, 60000); return () => clearInterval(int);
   }, [appData.startDate]);
 
+  useEffect(() => {
+    // THÊM DÒNG NÀY ĐỂ TEST (Xoá đi sau khi làm xong UI)
+    // localStorage.removeItem('love_tracker_tutorial');
+
+    // Chỉ kích hoạt Hướng dẫn khi đã load xong và CÓ coupleData (Đã ghép đôi)
+    if (isLoading || !session || !coupleData) return;
+
+    const hasSeenTutorial = localStorage.getItem('love_tracker_tutorial');
+    
+    if (!hasSeenTutorial) {
+      const driverObj = driver({
+        showProgress: true,
+        animate: true,
+        nextBtnText: 'Tiếp theo ➔',
+        prevBtnText: '⬅ Quay lại',
+        doneBtnText: 'Bắt đầu thôi! 💖',
+        steps: [
+          { 
+            element: '#memory-btn', 
+            popover: { title: '📸 Góc Kỷ Niệm', description: 'Nơi lưu giữ những bức ảnh dìm hàng và khoảnh khắc đáng yêu nhất của 2 đứa mình.', side: "top", align: 'center' }
+          },
+          { 
+            element: '#question-btn', 
+            popover: { title: '💭 Câu Hỏi Mỗi Ngày', description: 'Mỗi ngày hệ thống sẽ phát 1 câu hỏi random. Phải trả lời thì mới xem được đáp án của người kia nha!', side: "top", align: 'center' }
+          },
+          { 
+            element: '#bucket-btn', 
+            popover: { title: '✨ Ước Nguyện', description: 'Cùng nhau viết ra những điều muốn làm chung (như đi Đà Lạt, xem phim ma, nuôi một chú mèo...).', side: "top", align: 'center' }
+          },
+          { 
+            element: '#setting-btn', 
+            popover: { title: '⚙️ Cài Đặt Cá Nhân', description: 'Đổi avatar xinh xắn, đổi tên hiển thị hay màu nền ở đây nè.', side: "top", align: 'center' }
+          },
+          { 
+            element: '#unpair-btn', 
+            popover: { title: '💔 Huỷ Ghép Đôi', description: 'Nút này để chia tay... à mà thôi, hy vọng 2 bạn sẽ KHÔNG BAO GIỜ phải dùng đến nút này đâu! 🥺', side: "left", align: 'end' }
+          },
+        ],
+        onDestroyStarted: () => {
+          localStorage.setItem('love_tracker_single_tutorial', 'true');
+          driverObj.destroy();
+        }
+      });
+
+      // Tăng thời gian chờ lên 1000ms để hiệu ứng load web chạy xong hẳn, fix lỗi đen ô đầu tiên
+      setTimeout(() => {
+        driverObj.drive();
+      }, 1000); 
+    }
+  }, [isLoading, session, coupleData]);
+
   const handleMoodChange = async (m: string) => {
     setMyMood(m);
     setShowMoodMenu(false);
@@ -183,6 +236,7 @@ export default function Home() {
       {/* NÚT HUỶ GHÉP ĐÔI (FAB) */}
       {coupleData && (
         <button
+          id="unpair-btn"
           onClick={() => setShowUnpairConfirm(true)}
           className="fixed bottom-6 right-6 z-40 p-3 rounded-2xl bg-white/40 hover:bg-red-50 backdrop-blur-md border border-white/50 text-red-400 shadow-sm transition-all hover:scale-110 group flex items-center gap-2"
         >
@@ -327,13 +381,13 @@ export default function Home() {
                 <ExpBar locale={locale} daysRemaining={daysRemaining} nextAnniversaryYear={nextAnniYear} progressWidth={progressWidth} />
 
                 <div className="grid grid-cols-2 gap-3 mt-8">
-                  <button onClick={() => setCurrentView('memories')} className="btn-cute py-3 lg:py-4 text-sm font-bold shadow-sm transition-all hover:scale-105">{t.nav.memories}</button>
-                  <button onClick={() => setCurrentView('prompts')} className="btn-cute py-3 lg:py-4 text-sm font-bold shadow-sm transition-all hover:scale-105">{t.nav.prompts}</button>
-                  <button onClick={() => setCurrentView('bucket_list')} className="col-span-2 btn-cute py-3 lg:py-4 text-sm font-bold shadow-sm transition-all hover:scale-105">{t.nav.bucketList}</button>
+                  <button id="memory-btn" onClick={() => setCurrentView('memories')} className="btn-cute py-3 lg:py-4 text-sm font-bold shadow-sm transition-all hover:scale-105">{t.nav.memories}</button>
+                  <button id="question-btn" onClick={() => setCurrentView('prompts')} className="btn-cute py-3 lg:py-4 text-sm font-bold shadow-sm transition-all hover:scale-105">{t.nav.prompts}</button>
+                  <button id="bucket-btn" onClick={() => setCurrentView('bucket_list')} className="col-span-2 btn-cute py-3 lg:py-4 text-sm font-bold shadow-sm transition-all hover:scale-105">{t.nav.bucketList}</button>
                 </div>
 
                 <div className="mt-auto pt-6">
-                  <button onClick={() => setIsSettingsOpen(true)} className="w-full bg-slate-50 hover:bg-slate-100 text-slate-500 py-4 text-sm font-bold rounded-2xl transition-colors border border-slate-100 flex items-center justify-center gap-2 shadow-sm">
+                  <button id='setting-btn' onClick={() => setIsSettingsOpen(true)} className="w-full bg-slate-50 hover:bg-slate-100 text-slate-500 py-4 text-sm font-bold rounded-2xl transition-colors border border-slate-100 flex items-center justify-center gap-2 shadow-sm">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     {t.nav.settings}
                   </button>
