@@ -13,35 +13,120 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
   
   const t = translations[locale].dailyPrompt;
   const [todayQuestion, setTodayQuestion] = useState("...");
+  
   const todayString = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     fetchDailyData();
-    const channel = supabase.channel('public:daily_answers_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_answers', filter: `couple_id=eq.${coupleId}` }, () => {
+    
+    const channel = supabase.channel('public:daily_questions_changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'daily_questions', 
+        filter: `for_date=eq.${todayString}` 
+      }, () => {
         fetchDailyData();
       }).subscribe();
+      
     return () => { supabase.removeChannel(channel); };
   }, [coupleId]);
 
   const fetchDailyData = async () => {
-    const { data: qData } = await supabase.from('daily_questions').select('question').eq('for_date', todayString).single();
-    setTodayQuestion(qData ? qData.question : t.fallbackQuestion);
+    // SỬA LỖI Ở ĐÂY: Lọc đúng coupleId, lấy dòng mới nhất và chỉ lấy 1 dòng
+    const { data: qDataArr, error } = await supabase
+      .from('daily_questions')
+      .select('*')
+      .eq('for_date', todayString)
+      .eq('couple_id', coupleId)
+      .order('created_at', { ascending: false })
+      .limit(1);
 
-    const { data: history } = await supabase.from('daily_answers').select('*').eq('couple_id', coupleId).eq('answered_date', todayString);
-    if (history) {
-      const mine = history.find((d: any) => d.user_id === currentUser.id);
-      const partners = history.find((d: any) => d.user_id !== currentUser.id);
-      if (mine) { setMyAnswer(mine.answer); setIsSubmitted(true); }
-      if (partners) { setHasPartnerAnswered(true); setPartnerAnswerText(partners.answer); }
+    if (error) console.error("Lỗi tải data:", error.message);
+
+    const qData = qDataArr && qDataArr.length > 0 ? qDataArr[0] : null;
+
+    if (qData) {
+      setTodayQuestion(qData.question || t.fallbackQuestion);
+
+      let mine = null;
+      let partners = null;
+
+      if (qData.user1_id === currentUser.id) {
+        mine = qData.user1_answer;
+        partners = qData.user2_answer;
+      } else if (qData.user2_id === currentUser.id) {
+        mine = qData.user2_answer;
+        partners = qData.user1_answer;
+      } else {
+        if (qData.user1_id && qData.user1_id !== currentUser.id) partners = qData.user1_answer;
+        if (qData.user2_id && qData.user2_id !== currentUser.id) partners = qData.user2_answer;
+      }
+
+      if (mine) { 
+        setMyAnswer(mine); 
+        setIsSubmitted(true); 
+      }
+      if (partners) { 
+        setHasPartnerAnswered(true); 
+        setPartnerAnswerText(partners); 
+      }
+    } else {
+      setTodayQuestion(t.fallbackQuestion);
     }
   };
 
   const handleSubmit = async () => {
     if (!myAnswer.trim() || !currentUser?.id) return;
     setIsSubmitting(true);
-    await supabase.from('daily_answers').insert([{ couple_id: coupleId, user_id: currentUser.id, question: todayQuestion, answer: myAnswer.trim(), answered_date: todayString }]);
-    setIsSubmitted(true);
+    
+    // Tương tự, dùng limit(1) khi update để tránh lỗi
+    const { data: qDataArr } = await supabase
+      .from('daily_questions')
+      .select('*')
+      .eq('for_date', todayString)
+      .eq('couple_id', coupleId)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    const qData = qDataArr && qDataArr.length > 0 ? qDataArr[0] : null;
+
+    if (qData) {
+      let updateData: any = {};
+      
+      if (qData.user1_id === currentUser.id) {
+        updateData = { user1_answer: myAnswer.trim() };
+      } else if (qData.user2_id === currentUser.id) {
+        updateData = { user2_answer: myAnswer.trim() };
+      } else if (!qData.user1_id) {
+        updateData = { user1_id: currentUser.id, user1_answer: myAnswer.trim() };
+      } else {
+        updateData = { user2_id: currentUser.id, user2_answer: myAnswer.trim() };
+      }
+
+      const { error } = await supabase.from('daily_questions').update(updateData).eq('id', qData.id);
+
+      if (error) {
+        alert(`Lỗi Update: ${error.message}`);
+      } else {
+        setIsSubmitted(true);
+      }
+    } else {
+      const { error } = await supabase.from('daily_questions').insert([{
+        for_date: todayString,
+        question: todayQuestion, // Đồng bộ câu hỏi đang hiển thị
+        couple_id: coupleId,
+        user1_id: currentUser.id,
+        user1_answer: myAnswer.trim()
+      }]);
+      
+      if (error) {
+         alert(`Lỗi Insert: ${error.message}`);
+      } else {
+         setIsSubmitted(true);
+      }
+    }
+    
     setIsSubmitting(false);
   };
 
@@ -56,14 +141,14 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar pb-24">
-        <div className="bg-white rounded-3xl p-8 text-center shadow-sm border border-theme-50 relative overflow-hidden">
+      <div className="flex-1 overflow-y-auto px-4 py-6 md:p-6 space-y-6 custom-scrollbar pb-24">
+        <div className="bg-white rounded-3xl p-6 md:p-8 text-center shadow-sm border border-theme-50 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-theme-300"></div>
           <span className="text-4xl mb-4 block">💭</span>
-          <p className="font-bold text-slate-700 text-lg leading-relaxed">{todayQuestion}</p>
+          <p className="font-bold text-slate-700 text-base md:text-lg leading-relaxed">{todayQuestion}</p>
         </div>
 
-        <div className="bg-white border border-slate-100 p-5 rounded-3xl shadow-sm">
+        <div className="bg-white border border-slate-100 p-4 md:p-5 rounded-3xl shadow-sm">
           <p className="text-[11px] font-bold text-slate-400 mb-3 uppercase tracking-widest flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-slate-300"></span>
             {t.partnerAnswered.replace('{name}', partnerName || 'Người ấy')}
@@ -86,7 +171,7 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
           )}
         </div>
 
-        <div className="bg-white border border-theme-100 p-5 rounded-3xl shadow-sm">
+        <div className="bg-white border border-theme-100 p-4 md:p-5 rounded-3xl shadow-sm">
           <p className="text-[11px] font-bold text-theme-400 mb-3 uppercase tracking-widest flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-theme-400"></span>
             {t.yourAnswer}
@@ -99,7 +184,7 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
                 className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm outline-none focus:border-theme-400 transition-all resize-none custom-scrollbar shadow-inner"
                 placeholder={t.placeholder} rows={4} value={myAnswer} onChange={(e) => setMyAnswer(e.target.value)}
               ></textarea>
-              <button onClick={handleSubmit} disabled={!myAnswer.trim() || isSubmitting} className={`w-full py-4 rounded-2xl font-bold transition-all shadow-sm ${myAnswer.trim() ? 'btn-cute text-white hover:scale-[1.02]' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}>
+              <button onClick={handleSubmit} disabled={!myAnswer.trim() || isSubmitting} className={`w-full py-3.5 md:py-4 rounded-2xl font-bold transition-all shadow-sm ${myAnswer.trim() ? 'btn-cute text-white hover:scale-[1.02]' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}>
                 {isSubmitting ? t.btnSubmitting : t.btnSubmit}
               </button>
             </div>
