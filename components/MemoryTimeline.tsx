@@ -32,6 +32,8 @@ export default function MemoryTimeline({ onBack, coupleId, currentUser, locale =
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [newPreviews, setNewPreviews] = useState<string[]>([]);
 
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   useEffect(() => { fetchMemories(); }, [limit, coupleId]);
 
   useEffect(() => {
@@ -57,18 +59,18 @@ export default function MemoryTimeline({ onBack, coupleId, currentUser, locale =
   };
 
   const openEditModal = (memory: any) => {
-    setEditingMemory(memory); 
-    setTitle(memory.title); 
-    setDescription(memory.description); 
-    setLocation(memory.location || ''); 
-    setMemoryDate(memory.memory_date); 
-    
+    setEditingMemory(memory);
+    setTitle(memory.title);
+    setDescription(memory.description);
+    setLocation(memory.location || '');
+    setMemoryDate(memory.memory_date);
+
     // Đưa ảnh cũ vào danh sách quản lý
     const urls = memory.image_urls?.length > 0 ? memory.image_urls : (memory.image_url ? [memory.image_url] : []);
     setExistingImages(urls);
-    setNewFiles([]); 
-    setNewPreviews([]); 
-    
+    setNewFiles([]);
+    setNewPreviews([]);
+
     setIsModalOpen(true);
   };
 
@@ -77,12 +79,13 @@ export default function MemoryTimeline({ onBack, coupleId, currentUser, locale =
     if (e.target.files) {
       const addedFiles = Array.from(e.target.files);
       
-      // Kiểm tra giới hạn 10 ảnh
       if (existingImages.length + newFiles.length + addedFiles.length > 10) {
-        alert('Chỉ được chọn tối đa 10 ảnh nhé!'); 
+        setUploadError(t.maxImagesError); 
+        setTimeout(() => setUploadError(null), 3000);
         return;
       }
       
+      setUploadError(null);
       setNewFiles([...newFiles, ...addedFiles]);
       setNewPreviews([...newPreviews, ...addedFiles.map(file => URL.createObjectURL(file))]);
     }
@@ -103,7 +106,7 @@ export default function MemoryTimeline({ onBack, coupleId, currentUser, locale =
     e.preventDefault();
     if (!currentUser?.id) return;
     setUploading(true);
-    
+
     // Giữ lại các URL của ảnh cũ chưa bị xoá
     let finalImageUrls = [...existingImages];
 
@@ -129,12 +132,12 @@ export default function MemoryTimeline({ onBack, coupleId, currentUser, locale =
     resetForm(); fetchMemories();
   };
 
-  const resetForm = () => { 
-    setTitle(''); setDescription(''); setLocation(''); 
-    setExistingImages([]); setNewFiles([]); setNewPreviews([]); 
-    setEditingMemory(null); setIsModalOpen(false); setUploading(false); 
+  const resetForm = () => {
+    setTitle(''); setDescription(''); setLocation('');
+    setExistingImages([]); setNewFiles([]); setNewPreviews([]);
+    setEditingMemory(null); setIsModalOpen(false); setUploading(false);
   };
-  
+
   const handleDeleteClick = (id: string) => { setMemoryToDelete(id); };
   const confirmDelete = async () => { if (!memoryToDelete) return; await supabase.from('memories').delete().eq('id', memoryToDelete); setMemoryToDelete(null); fetchMemories(); };
 
@@ -152,22 +155,22 @@ export default function MemoryTimeline({ onBack, coupleId, currentUser, locale =
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar pb-24">
+      <div className="flex-1 overflow-y-auto px-3 py-6 md:p-6 space-y-6 custom-scrollbar pb-24">
         {isLoading && memories.length === 0 ? (
           <div className="text-center text-slate-400 mt-10 font-bold animate-pulse text-sm">{t.loading}</div>
         ) : memories.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-400"><p className="text-sm font-medium">{t.empty}</p></div>
         ) : (
-          <div className="relative border-l-2 border-theme-100 ml-4 space-y-8">
+          <div className="relative border-l-2 border-theme-100 ml-1 md:ml-4 space-y-6 md:space-y-8">
             {memories.map((memory) => {
               const isLikedByMe = memory.liked_by?.includes(currentUser?.id);
               const likeCount = memory.liked_by?.length || 0;
               const displayImages = memory.image_urls?.length > 0 ? memory.image_urls : (memory.image_url ? [memory.image_url] : []);
 
               return (
-                <div key={memory.id} className="relative pl-6 animate-fade-in">
-                  <div className="absolute w-4 h-4 bg-theme-400 rounded-full -left-[9px] top-1 border-4 border-white shadow-sm"></div>
-                  <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-50 relative group">
+                <div key={memory.id} className="relative pl-4 md:pl-6 animate-fade-in">
+                  <div className="absolute w-3 h-3 md:w-4 md:h-4 bg-theme-400 rounded-full -left-[7px] md:-left-[9px] top-1.5 md:top-1 border-[3px] md:border-4 border-white shadow-sm"></div>
+                  <div className="bg-white p-4 md:p-5 rounded-xl md:rounded-2xl shadow-sm border border-slate-50 relative group">
                     <div className="flex flex-wrap gap-2 mb-3">
                       <span className="inline-block px-3 py-1 bg-theme-50 text-theme-600 font-bold text-[10px] uppercase tracking-wider rounded-full">{new Date(memory.memory_date).toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-US')}</span>
                       {memory.location && <span className="inline-flex items-center gap-1 px-3 py-1 bg-slate-50 text-slate-500 font-bold text-[10px] uppercase tracking-wider rounded-full border border-slate-100">{memory.location}</span>}
@@ -216,15 +219,20 @@ export default function MemoryTimeline({ onBack, coupleId, currentUser, locale =
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] px-4">
           <form onSubmit={handleSaveMemory} className="bg-white p-6 rounded-[2rem] w-full max-w-sm shadow-cute-lg animate-fade-in relative max-h-[90vh] overflow-y-auto custom-scrollbar">
             <h2 className="font-bold text-theme-600 text-xl mb-6 text-center">{editingMemory ? t.editTitle : t.addEditTitle}</h2>
-            
+
             {/* --- KHU VỰC CHỌN ẢNH NÂNG CẤP --- */}
             <div className="mb-4">
               <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest px-1">{t.imageLabel}</label>
-              
+
               <div className="w-full border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 relative p-3">
+                {uploadError && (
+                  <div className="text-red-500 text-xs font-bold text-center mt-2 animate-bounce">
+                    {uploadError}
+                  </div>
+                )}
                 {(existingImages.length > 0 || newPreviews.length > 0) ? (
                   <div className="flex flex-wrap gap-2">
-                    
+
                     {/* 1. Hiển thị Ảnh Cũ (từ DB) */}
                     {existingImages.map((url, idx) => (
                       <div key={`old-${idx}`} className="relative w-16 h-16 group rounded-xl overflow-hidden shadow-sm border border-slate-200">
@@ -232,7 +240,7 @@ export default function MemoryTimeline({ onBack, coupleId, currentUser, locale =
                         <button type="button" onClick={() => handleRemoveExisting(idx)} className="absolute top-1 right-1 bg-black/60 text-white w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:scale-110">✕</button>
                       </div>
                     ))}
-                    
+
                     {/* 2. Hiển thị Ảnh Mới */}
                     {newPreviews.map((url, idx) => (
                       <div key={`new-${idx}`} className="relative w-16 h-16 group rounded-xl overflow-hidden shadow-sm border border-theme-200">
@@ -264,7 +272,7 @@ export default function MemoryTimeline({ onBack, coupleId, currentUser, locale =
               <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t.locationPlaceholder} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm outline-none" />
               <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t.descPlaceholder} rows={3} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm outline-none resize-none" required />
             </div>
-            
+
             <div className="flex gap-2 mt-6">
               <button type="button" onClick={resetForm} className="w-1/2 bg-slate-100 text-slate-500 font-bold py-4 rounded-2xl text-sm">{t.btnCancel}</button>
               <button type="submit" disabled={uploading} className="w-1/2 btn-cute py-4 text-sm shadow-cute">{uploading ? t.btnSaving : (editingMemory ? t.btnUpdate : t.btnSave)}</button>

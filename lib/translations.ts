@@ -4,8 +4,8 @@ export const translations = {
     dashboard: { daysTogether: "Đã bên nhau", day: "ngày", emptyState: "Hãy chọn một tính năng bên trái nhé" },
     profile: { edit: "Chỉnh sửa hồ sơ", logout: "Đăng xuất", unpair: "Huỷ ghép đôi", moodTitle: "Cập nhật tâm trạng", partnerMood: "{name} đang cảm thấy {mood}" },
     unpairModal: {
-      confirmTitle: "Huỷ ghép đôi?", confirmDesc: "Hành động này sẽ gửi yêu cầu huỷ không gian chung đến đối phương. Bạn có chắc không?", btnCancel: "Để sau đi", btnConfirm: "Chắc chắn",
-      sentTitle: "Đã gửi yêu cầu", sentDesc: "Yêu cầu đã được gửi đi. Giờ chúng ta chờ đối phương phản hồi nhé!", btnUnderstand: "Đã hiểu",
+      confirmTitle: "Huỷ ghép đôi?", confirmDesc: "Hành động này sẽ gửi yêu cầu huỷ không gian chung đến đối phương. Bạn có chắc không?", btnCancel: "Huỷ", btnConfirm: "Chắc chắn",
+      sentTitle: "Đã gửi yêu cầu", sentDesc: "Yêu cầu đã được gửi đi. Cùng chờ đối phương phản hồi nhé!", btnUnderstand: "Đã hiểu",
       receiveTitle: "Lời chia tay?", receiveDesc: "Đối phương muốn huỷ không gian chung này. Bạn có đồng ý rời đi không?", btnReject: "Không đồng ý", btnAccept: "Đồng ý"
     },
     expBar: { anniversary: "Kỷ niệm", year: "năm", daysLeft: "Còn {count} ngày" },
@@ -17,7 +17,8 @@ export const translations = {
     memoryTimeline: {
       title: "Kỷ niệm", loading: "Đang tải...", empty: "Chưa có kỷ niệm nào.", loadMore: "Tải thêm", addEditTitle: "Thêm kỷ niệm mới", editTitle: "Cập nhật kỷ niệm",
       imageLabel: "Ảnh (Tối đa 10 ảnh)", clickToUpload: "Bấm để tải ảnh lên", titlePlaceholder: "Tiêu đề...", locationPlaceholder: "Địa điểm (Tuỳ chọn)", descPlaceholder: "Kể lại câu chuyện...",
-      btnCancel: "Hủy", btnSave: "Lưu lại", btnUpdate: "Cập nhật", btnSaving: "Đang lưu...", deleteTitle: "Xóa kỷ niệm", deleteDesc: "Bạn có chắc chắn muốn xóa kỷ niệm này không? Hành động này không thể hoàn tác.", btnDelete: "Xóa luôn"
+      btnCancel: "Hủy", btnSave: "Lưu lại", btnUpdate: "Cập nhật", btnSaving: "Đang lưu...", deleteTitle: "Xóa kỷ niệm", deleteDesc: "Bạn có chắc chắn muốn xóa kỷ niệm này không? Hành động này không thể hoàn tác.", btnDelete: "Xóa luôn",
+      maxImagesError: "Chỉ được chọn tối đa 10 ảnh!"
     },
     settingsModal: { title: "Cài đặt", startDate: "Ngày bắt đầu", themeColor: "Màu sắc chủ đề", hexCode: "Mã màu: {color}", btnSave: "Lưu", btnSaving: "Đang lưu..." },
     singleDashboard: {
@@ -52,7 +53,7 @@ export const translations = {
     dashboard: { daysTogether: "Days Together", day: "days", emptyState: "Select a feature on the left" },
     profile: { edit: "Edit Profile", logout: "Logout", unpair: "Unpair", moodTitle: "Update Mood", partnerMood: "{name} is feeling {mood}" },
     unpairModal: {
-      confirmTitle: "Unpair?", confirmDesc: "This will send an unpairing request to your partner. Are you sure?", btnCancel: "Not now", btnConfirm: "Confirm",
+      confirmTitle: "Unpair?", confirmDesc: "This will send an unpairing request to your partner. Are you sure?", btnCancel: "Cancel", btnConfirm: "Confirm",
       sentTitle: "Request Sent", sentDesc: "Request sent. Waiting for your partner's response!", btnUnderstand: "Understood",
       receiveTitle: "Farewell?", receiveDesc: "Your partner wants to close this shared space. Do you agree to leave?", btnReject: "Reject", btnAccept: "Accept"
     },
@@ -65,7 +66,8 @@ export const translations = {
     memoryTimeline: {
       title: "Memories", loading: "Loading...", empty: "No memories yet.", loadMore: "Load more", addEditTitle: "Add new memory", editTitle: "Update memory",
       imageLabel: "Images (Max 10)", clickToUpload: "Click to upload", titlePlaceholder: "Title...", locationPlaceholder: "Location (Optional)", descPlaceholder: "Tell the story...",
-      btnCancel: "Cancel", btnSave: "Save", btnUpdate: "Update", btnSaving: "Saving...", deleteTitle: "Delete memory", deleteDesc: "Are you sure you want to delete this memory? This action cannot be undone.", btnDelete: "Delete"
+      btnCancel: "Cancel", btnSave: "Save", btnUpdate: "Update", btnSaving: "Saving...", deleteTitle: "Delete memory", deleteDesc: "Are you sure you want to delete this memory? This action cannot be undone.", btnDelete: "Delete",
+      maxImagesError: "You can only select up to 10 images!"
     },
     settingsModal: { title: "Settings", startDate: "Start Date", themeColor: "Theme Color", hexCode: "Hex Code: {color}", btnSave: "Save", btnSaving: "Saving..." },
     singleDashboard: {
