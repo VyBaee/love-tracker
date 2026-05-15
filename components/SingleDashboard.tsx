@@ -34,57 +34,54 @@ export default function SingleDashboard({ session, myProfile, onPaired, onProfil
   }, []);
 
   useEffect(() => {
-    // DÒNG NÀY ĐỂ TEST (Xong thì xoá đi nhé)
-    // localStorage.removeItem('love_tracker_single_tutorial');
+    if (!session?.user?.id) return;
 
-    // Kiểm tra xem đã xem chưa
-    const hasSeenTutorial = localStorage.getItem('love_tracker_single_tutorial');
+    const singleTutorialKey = `love_tracker_single_tutorial_${session.user.id}`;
+    const hasSeenTutorial = localStorage.getItem(singleTutorialKey);
 
     if (!hasSeenTutorial) {
       const driverObj = driver({
         showProgress: true,
         animate: true,
-        nextBtnText: 'Tiếp theo ➔',
-        prevBtnText: '⬅ Lùi lại',
-        doneBtnText: 'Bắt đầu thôi! 💖',
+        nextBtnText: 'Tiếp ➔<br><span class="en-btn">Next</span>',
+        prevBtnText: '⬅ Lùi<br><span class="en-btn">Back</span>',
+        doneBtnText: 'Bắt đầu!<br><span class="en-btn">Let\'s go!</span>',
         steps: [
-          {
-            // KHÔNG CÓ element -> Sẽ hiện to đùng ở giữa màn hình
-            popover: {
-              title: '👋 Xin chào Người mới!',
-              description: 'Chào mừng bạn đến với Love Tracker. Mình sẽ hướng dẫn bạn nhanh cách sử dụng trang này để đón "nửa kia" về nhà chung nhé!',
-              align: 'center'
-            }
-          },
-          {
-            element: '#pair-section',
-            popover: { title: '💞 Ghép Đôi Nào', description: 'Bạn hãy nhập mã số (ID) của người ấy vào đây để gửi lời mời về chung một nhà nha.', side: "bottom", align: 'center' }
-          },
-          {
-            element: '#edit-profile-btn',
-            popover: { title: '🎨 Trang trí Profile', description: 'Hãy đổi một chiếc Avatar thật xinh xắn và cập nhật tên của bạn để người ấy dễ dàng nhận ra nhé.', side: "bottom", align: 'center' }
-          },
-          {
-            element: '#notification-btn',
-            popover: { title: '🔔 Hòm Thư Chờ', description: 'Nếu người ấy gửi lời mời ghép đôi cho bạn trước, nó sẽ nằm ở đây. Nhớ kiểm tra thường xuyên!', side: "bottom", align: 'center' }
-          },
-          {
-            element: '#lang-btn',
-            popover: { title: '🌍 Ngôn Ngữ', description: 'Bạn có thể đổi sang Tiếng Anh hoặc Tiếng Việt ở góc này cho dễ dùng.', side: "left", align: 'center' }
-          },
+          { popover: { 
+            title: '<div class="vi-title">Xin chào</div><div class="en-title">Hello!</div>', 
+            description: '<div class="vi-desc">Hướng dẫn nhanh cách rước "nửa kia" về nhà chung nhé!</div><div class="en-desc">Let\'s learn how to invite your partner here!</div>', 
+            align: 'center' 
+          } },
+          { element: '#pair-section', popover: { 
+            title: '<div class="vi-title">Ghép Đôi</div><div class="en-title">Pair Up</div>', 
+            description: '<div class="vi-desc">Nhập UID của người ấy vào đây để gửi lời mời.</div><div class="en-desc">Enter their UID here to send an invite.</div>', 
+            side: "bottom", align: 'center' 
+          } },
+          { element: '#edit-profile-btn', popover: { 
+            title: '<div class="vi-title">Profile</div><div class="en-title">Profile</div>', 
+            description: '<div class="vi-desc">Đổi Avatar và tên để người ấy dễ nhận ra nhé.</div><div class="en-desc">Change your avatar so they can recognize you.</div>', 
+            side: "bottom", align: 'center' 
+          } },
+          { element: '#notification-btn', popover: { 
+            title: '<div class="vi-title">Thông báo</div><div class="en-title">Notifications</div>', 
+            description: '<div class="vi-desc">Lời mời ghép đôi sẽ nằm ở đây. Nhớ kiểm tra nha!</div><div class="en-desc">Your pairing invites will appear here.</div>', 
+            side: "bottom", align: 'center' 
+          } },
+          { element: '#lang-btn', popover: { 
+            title: '<div class="vi-title">Ngôn Ngữ</div><div class="en-title">Language</div>', 
+            description: '<div class="vi-desc">Đây là khu vực thay đổi ngôn ngữ.</div><div class="en-desc">This is where you can change the language.</div>', 
+            side: "left", align: 'center' 
+          } },
         ],
         onDestroyStarted: () => {
-          localStorage.setItem('love_tracker_single_tutorial', 'true');
+          localStorage.setItem(singleTutorialKey, 'true');
           driverObj.destroy();
         }
       });
 
-      // Để 800ms chờ trang load xong animation rồi hẵng chạy
-      setTimeout(() => {
-        driverObj.drive();
-      }, 800);
+      setTimeout(() => { driverObj.drive(); }, 800);
     }
-  }, []); // Cứ load trang Single lên là chạy
+  }, [session?.user?.id]);
 
   const fetchInvites = async () => {
     const { data } = await supabase.from('pairing_invites').select('*, sender:profiles!sender_id(display_name)').eq('receiver_email', session.user.email).eq('status', 'pending');

@@ -53,7 +53,19 @@ export default function Home() {
   const [showMoodMenu, setShowMoodMenu] = useState(false);
   const moods = ['🥰', '😊', '😢', '😠', '😴', '🤒'];
 
-  const [locale, setLocale] = useState<Locale>('vi'); // Mặc định là tiếng Việt
+  const [locale, setLocale] = useState<Locale>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('user_locale') as Locale) || 'vi';
+    }
+    return 'vi';
+  });
+
+  // Tạo một hàm đổi ngôn ngữ mới để lưu luôn vào máy
+  const handleLocaleChange = (newLocale: Locale) => {
+    setLocale(newLocale);
+    localStorage.setItem('user_locale', newLocale);
+  };
+
   const t = translations[locale]; // Biến t để truy xuất nhanh
 
   useEffect(() => {
@@ -160,53 +172,66 @@ export default function Home() {
   }, [appData.startDate]);
 
   useEffect(() => {
-    // THÊM DÒNG NÀY ĐỂ TEST (Xoá đi sau khi làm xong UI)
-    // localStorage.removeItem('love_tracker_tutorial');
-
-    // Chỉ kích hoạt Hướng dẫn khi đã load xong và CÓ coupleData (Đã ghép đôi)
     if (isLoading || !session || !coupleData) return;
 
-    const hasSeenTutorial = localStorage.getItem('love_tracker_tutorial');
-    
+    const tutorialKey = `love_tracker_tutorial_${session.user.id}`;
+    const hasSeenTutorial = localStorage.getItem(tutorialKey);
+
     if (!hasSeenTutorial) {
       const driverObj = driver({
         showProgress: true,
         animate: true,
-        nextBtnText: 'Tiếp theo ➔',
-        prevBtnText: '⬅ Quay lại',
-        doneBtnText: 'Bắt đầu thôi! 💖',
+        nextBtnText: 'Tiếp ➔<br><span class="en-btn">Next</span>',
+        prevBtnText: '⬅ Lùi<br><span class="en-btn">Back</span>',
+        doneBtnText: 'Bắt đầu!<br><span class="en-btn">Let\'s go!</span>',
+        
+        onHighlightStarted: (element) => {
+          if (!element) return;
+          if (element.id === 'unpair-btn') return;
+          const rect = element.getBoundingClientRect();
+          const isOutOfViewport = rect.top < 100 || rect.bottom > window.innerHeight - 100;
+          if (isOutOfViewport) {
+            setTimeout(() => {
+              const targetY = window.scrollY + rect.top - (window.innerHeight / 2) + (rect.height / 2);
+              window.scrollTo({ top: targetY, behavior: 'smooth' });
+            }, 50);
+          }
+        },
+
         steps: [
-          { 
-            element: '#memory-btn', 
-            popover: { title: '📸 Góc Kỷ Niệm', description: 'Nơi lưu giữ những bức ảnh dìm hàng và khoảnh khắc đáng yêu nhất của 2 đứa mình.', side: "top", align: 'center' }
-          },
-          { 
-            element: '#question-btn', 
-            popover: { title: '💭 Câu Hỏi Mỗi Ngày', description: 'Mỗi ngày hệ thống sẽ phát 1 câu hỏi random. Phải trả lời thì mới xem được đáp án của người kia nha!', side: "top", align: 'center' }
-          },
-          { 
-            element: '#bucket-btn', 
-            popover: { title: '✨ Ước Nguyện', description: 'Cùng nhau viết ra những điều muốn làm chung (như đi Đà Lạt, xem phim ma, nuôi một chú mèo...).', side: "top", align: 'center' }
-          },
-          { 
-            element: '#setting-btn', 
-            popover: { title: '⚙️ Cài Đặt Cá Nhân', description: 'Đổi avatar xinh xắn, đổi tên hiển thị hay màu nền ở đây nè.', side: "top", align: 'center' }
-          },
-          { 
-            element: '#unpair-btn', 
-            popover: { title: '💔 Huỷ Ghép Đôi', description: 'Nút này để chia tay... à mà thôi, hy vọng 2 bạn sẽ KHÔNG BAO GIỜ phải dùng đến nút này đâu! 🥺', side: "left", align: 'end' }
-          },
+          { element: '#memory-btn', popover: { 
+            title: '<div class="vi-title">Góc Kỷ Niệm</div><div class="en-title">Memories</div>', 
+            description: '<div class="vi-desc">Nơi lưu giữ những bức ảnh dìm hàng của 2 đứa.</div><div class="en-desc">A place to keep our funniest photos.</div>', 
+            side: "top", align: 'center' 
+          } },
+          { element: '#question-btn', popover: { 
+            title: '<div class="vi-title">Câu Hỏi</div><div class="en-title">Daily Prompts</div>', 
+            description: '<div class="vi-desc">Mỗi ngày 1 câu hỏi. Phải trả lời mới xem được đáp án của người kia!</div><div class="en-desc">Answer the daily question to see your partner\'s response!</div>', 
+            side: "top", align: 'center' 
+          } },
+          { element: '#bucket-btn', popover: { 
+            title: '<div class="vi-title">Ước Nguyện</div><div class="en-title">Bucket List</div>', 
+            description: '<div class="vi-desc">Viết ra những điều muốn làm chung cùng nhau.</div><div class="en-desc">Write down things we want to do together.</div>', 
+            side: "top", align: 'center' 
+          } },
+          { element: '#setting-btn', popover: { 
+            title: '<div class="vi-title">Cài Đặt</div><div class="en-title">Settings</div>', 
+            description: '<div class="vi-desc">Đổi màu nền và cài ngày bắt đầu của 2 bạn ở đây nè.</div><div class="en-desc">Change the background color and set the start date for both of you here.</div>', 
+            side: "top", align: 'center' 
+          } },
+          { element: '#unpair-btn', popover: { 
+            title: '<div class="vi-title">Huỷ Ghép</div><div class="en-title">Unpair</div>', 
+            description: '<div class="vi-desc">Hy vọng 2 bạn KHÔNG BAO GIỜ phải dùng đến nút này!</div><div class="en-desc">Hopefully, you will NEVER have to use this button!</div>', 
+            side: "top", align: 'end' 
+          } },
         ],
         onDestroyStarted: () => {
-          localStorage.setItem('love_tracker_single_tutorial', 'true');
+          localStorage.setItem(tutorialKey, 'true');
           driverObj.destroy();
         }
       });
 
-      // Tăng thời gian chờ lên 1000ms để hiệu ứng load web chạy xong hẳn, fix lỗi đen ô đầu tiên
-      setTimeout(() => {
-        driverObj.drive();
-      }, 1000); 
+      setTimeout(() => { driverObj.drive(); }, 1000); 
     }
   }, [isLoading, session, coupleData]);
 
@@ -297,14 +322,14 @@ export default function Home() {
           <div className="fixed top-6 right-8 z-50 flex items-center gap-3">
             {/* Bộ chuyển ngôn ngữ */}
             <div className="flex items-center bg-white/80 backdrop-blur-md p-1 rounded-2xl border border-slate-100 shadow-sm">
-              <button 
+              <button
                 onClick={() => setLocale('vi')}
                 className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${locale === 'vi' ? 'bg-theme-100 scale-105 shadow-sm' : 'hover:bg-slate-50 opacity-60 grayscale'}`}
                 title="Tiếng Việt"
               >
                 <img src="https://flagcdn.com/w40/vn.png" alt="VN" className="w-5 h-auto rounded-[2px] shadow-sm" />
               </button>
-              <button 
+              <button
                 onClick={() => setLocale('en')}
                 className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${locale === 'en' ? 'bg-theme-100 scale-105 shadow-sm' : 'hover:bg-slate-50 opacity-60 grayscale'}`}
                 title="English"

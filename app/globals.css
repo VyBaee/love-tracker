@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+html, body {
+  /* Ép mọi thao tác cuộn trên toàn bộ web đều phải trượt từ từ */
+  scroll-behavior: smooth !important; 
+}
+
 @theme {
   --font-sans: var(--font-base), sans-serif;
 
@@ -116,6 +121,8 @@ body {
   border: 2px solid #fbcfe8 !important; /* Viền màu hồng phấn */
   box-shadow: 0 20px 40px -10px rgba(236, 72, 153, 0.2) !important; /* Đổ bóng hồng */
   font-family: inherit !important; /* Đồng bộ font chữ với web */
+  min-width: 350px !important; 
+  max-width: 400px !important;
 }
 
 /* Mũi tên chỉ (Arrow) */
@@ -177,4 +184,41 @@ body {
 /* Nút X (Đóng) ở góc trên */
 .driver-popover-close-btn {
   color: #94a3b8 !important;
+}
+
+/* ========================================= */
+/* BỐ CỤC SONG NGỮ (CHỮ VIỆT - ANH)       */
+/* ========================================= */
+.vi-title {
+  display: block;
+}
+.en-title {
+  display: block;
+  font-size: 0.75em;
+  color: #ec4899; /* Tiêu đề TA màu hồng */
+  font-style: italic;
+  margin-top: 4px;
+  font-weight: 800;
+  opacity: 0.9;
+}
+
+.vi-desc {
+  display: block;
+  margin-bottom: 8px;
+}
+.en-desc {
+  display: block;
+  font-size: 0.85em;
+  color: #64748b; /* Mô tả TA màu xám */
+  font-style: italic;
+  border-top: 1px dashed #fbcfe8; /* Kẻ vạch ngang màu hồng */
+  padding-top: 8px;
+}
+
+.en-btn {
+  display: block;
+  font-size: 0.75em;
+  font-weight: normal;
+  opacity: 0.85;
+  margin-top: 2px;
 }

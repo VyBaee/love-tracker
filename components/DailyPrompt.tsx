@@ -4,37 +4,43 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { translations, Locale } from '../lib/translations';
 
+// Ép chuẩn múi giờ Việt Nam (Tránh việc 1h sáng nhắn tin mà máy tính tưởng là hôm qua)
+const getVNTodayString = () => {
+  const d = new Date();
+  const vnTime = new Date(d.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+  return `${vnTime.getFullYear()}-${String(vnTime.getMonth() + 1).padStart(2, '0')}-${String(vnTime.getDate()).padStart(2, '0')}`;
+};
+
 export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName, locale = 'vi' }: any) {
   const [myAnswer, setMyAnswer] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [partnerAnswerText, setPartnerAnswerText] = useState('');
   const [hasPartnerAnswered, setHasPartnerAnswered] = useState(false);
-  
+
   const t = translations[locale].dailyPrompt;
-  const [todayQuestion, setTodayQuestion] = useState("...");
-  
-  const todayString = new Date().toISOString().split('T')[0];
+  const todayString = getVNTodayString();
+  const [todayQuestion, setTodayQuestion] = useState("Đang tải dữ liệu...");
 
   useEffect(() => {
     fetchDailyData();
-    
+
     const channel = supabase.channel('public:daily_questions_changes')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'daily_questions', 
-        filter: `for_date=eq.${todayString}` 
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'daily_questions',
+        filter: `for_date=eq.${todayString}`
       }, () => {
         fetchDailyData();
       }).subscribe();
-      
+
     return () => { supabase.removeChannel(channel); };
   }, [coupleId]);
 
   const fetchDailyData = async () => {
-    // SỬA LỖI Ở ĐÂY: Lọc đúng coupleId, lấy dòng mới nhất và chỉ lấy 1 dòng
-    const { data: qDataArr, error } = await supabase
+    // 1. Tìm xem DB hôm nay đã có câu hỏi chưa
+    const { data: qDataArr } = await supabase
       .from('daily_questions')
       .select('*')
       .eq('for_date', todayString)
@@ -42,13 +48,64 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
       .order('created_at', { ascending: false })
       .limit(1);
 
-    if (error) console.error("Lỗi tải data:", error.message);
+    let qData = qDataArr && qDataArr.length > 0 ? qDataArr[0] : null;
 
-    const qData = qDataArr && qDataArr.length > 0 ? qDataArr[0] : null;
+    // 2. Nếu CHƯA CÓ, nhờ AI suy nghĩ
+    if (!qData) {
+      setTodayQuestion("Đang nhờ AI suy nghĩ câu hỏi... 🤔");
+      try {
+        const res = await fetch('/api/question');
+        const aiData = await res.json();
 
+        // NẾU API BÁO LỖI -> QUĂNG LỖI RA LIỀN
+        if (!res.ok) {
+          throw new Error(aiData.error || "Không kết nối được với API");
+        }
+
+        const aiQuestion = aiData.question;
+
+        const { data: newQData, error: dbError } = await supabase.from('daily_questions').insert([{
+          for_date: todayString,
+          question: aiQuestion,
+          couple_id: coupleId
+        }]).select().single();
+
+        // =============== BẮT ĐẦU ĐOẠN SỬA LỖI ===============
+        if (dbError) {
+          // Mã 23505 là lỗi "Duplicate key" (Trùng lặp dữ liệu do React chạy 2 lần)
+          if (dbError.code === '23505') {
+            console.log("🔄 Phát hiện luồng chạy song song, tự động lấy câu hỏi đã lưu...");
+            const { data: existingData } = await supabase
+              .from('daily_questions')
+              .select('*')
+              .eq('for_date', todayString)
+              .eq('couple_id', coupleId)
+              .single();
+
+            qData = existingData;
+            setTodayQuestion(existingData.question);
+          } else {
+            // Lỗi database thực sự thì báo lỗi đỏ
+            throw new Error(`Lỗi lưu Database: ${dbError.message}`);
+          }
+        } else {
+          // Lưu thành công bình thường
+          qData = newQData;
+          setTodayQuestion(aiQuestion);
+        }
+        // =============== KẾT THÚC ĐOẠN SỬA LỖI ===============
+
+      } catch (err: any) {
+        // HIỂN THỊ THẲNG LỖI LÊN MÀN HÌNH ĐỂ DEV BIẾT ĐƯỜNG FIX
+        console.error("Bug Frontend nhận được:", err);
+        setTodayQuestion(`🚨 [Lỗi AI]: ${err.message}`);
+      }
+    } else {
+      setTodayQuestion(qData.question);
+    }
+
+    // 3. Hiển thị đáp án nếu có
     if (qData) {
-      setTodayQuestion(qData.question || t.fallbackQuestion);
-
       let mine = null;
       let partners = null;
 
@@ -63,24 +120,15 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
         if (qData.user2_id && qData.user2_id !== currentUser.id) partners = qData.user2_answer;
       }
 
-      if (mine) { 
-        setMyAnswer(mine); 
-        setIsSubmitted(true); 
-      }
-      if (partners) { 
-        setHasPartnerAnswered(true); 
-        setPartnerAnswerText(partners); 
-      }
-    } else {
-      setTodayQuestion(t.fallbackQuestion);
+      if (mine) { setMyAnswer(mine); setIsSubmitted(true); }
+      if (partners) { setHasPartnerAnswered(true); setPartnerAnswerText(partners); }
     }
   };
 
   const handleSubmit = async () => {
     if (!myAnswer.trim() || !currentUser?.id) return;
     setIsSubmitting(true);
-    
-    // Tương tự, dùng limit(1) khi update để tránh lỗi
+
     const { data: qDataArr } = await supabase
       .from('daily_questions')
       .select('*')
@@ -93,7 +141,7 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
 
     if (qData) {
       let updateData: any = {};
-      
+
       if (qData.user1_id === currentUser.id) {
         updateData = { user1_answer: myAnswer.trim() };
       } else if (qData.user2_id === currentUser.id) {
@@ -106,27 +154,10 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
 
       const { error } = await supabase.from('daily_questions').update(updateData).eq('id', qData.id);
 
-      if (error) {
-        alert(`Lỗi Update: ${error.message}`);
-      } else {
-        setIsSubmitted(true);
-      }
-    } else {
-      const { error } = await supabase.from('daily_questions').insert([{
-        for_date: todayString,
-        question: todayQuestion, // Đồng bộ câu hỏi đang hiển thị
-        couple_id: coupleId,
-        user1_id: currentUser.id,
-        user1_answer: myAnswer.trim()
-      }]);
-      
-      if (error) {
-         alert(`Lỗi Insert: ${error.message}`);
-      } else {
-         setIsSubmitted(true);
-      }
+      if (error) alert(`Lỗi Update: ${error.message}`);
+      else setIsSubmitted(true);
     }
-    
+
     setIsSubmitting(false);
   };
 
@@ -153,7 +184,7 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
             <span className="w-2 h-2 rounded-full bg-slate-300"></span>
             {t.partnerAnswered.replace('{name}', partnerName || 'Người ấy')}
           </p>
-          
+
           {!hasPartnerAnswered ? (
             <p className="text-sm text-slate-400 bg-slate-50 p-4 rounded-2xl italic">{t.partnerNotAnswered}</p>
           ) : isSubmitted ? (
@@ -180,7 +211,7 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
             <p className="text-sm text-slate-700 font-medium bg-slate-50 p-4 rounded-2xl leading-relaxed">{myAnswer}</p>
           ) : (
             <div className="space-y-4">
-              <textarea 
+              <textarea
                 className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm outline-none focus:border-theme-400 transition-all resize-none custom-scrollbar shadow-inner"
                 placeholder={t.placeholder} rows={4} value={myAnswer} onChange={(e) => setMyAnswer(e.target.value)}
               ></textarea>
