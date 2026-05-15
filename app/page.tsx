@@ -205,7 +205,7 @@ export default function Home() {
             side: "top", align: 'center' 
           } },
           { element: '#question-btn', popover: { 
-            title: '<div class="vi-title">Câu Hỏi</div><div class="en-title">Daily Prompts</div>', 
+            title: '<div class="vi-title">Câu Hỏi Hàng Ngày</div><div class="en-title">Daily Prompts</div>', 
             description: '<div class="vi-desc">Mỗi ngày 1 câu hỏi. Phải trả lời mới xem được đáp án của người kia!</div><div class="en-desc">Answer the daily question to see your partner\'s response!</div>', 
             side: "top", align: 'center' 
           } },
