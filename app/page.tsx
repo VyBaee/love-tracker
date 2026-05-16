@@ -172,15 +172,16 @@ export default function Home() {
   }, [appData.startDate]);
 
   useEffect(() => {
-    if (isLoading || !session || !coupleData) return;
+    if (isLoading || !session || !coupleData || !myProfile) return;
 
     const tutorialKey = `love_tracker_tutorial_${session.user.id}`;
-    const hasSeenTutorial = localStorage.getItem(tutorialKey);
+    const hasSeenTutorial = myProfile?.has_seen_tutorial;
 
     if (!hasSeenTutorial) {
       const driverObj = driver({
         showProgress: true,
         animate: true,
+        popoverClass: 'no-arrow',
         nextBtnText: 'Tiếp ➔<br><span class="en-btn">Next</span>',
         prevBtnText: '⬅ Lùi<br><span class="en-btn">Back</span>',
         doneBtnText: 'Bắt đầu!<br><span class="en-btn">Let\'s go!</span>',
@@ -225,15 +226,17 @@ export default function Home() {
             side: "top", align: 'end' 
           } },
         ],
-        onDestroyStarted: () => {
+        onDestroyStarted: async () => {
           localStorage.setItem(tutorialKey, 'true');
+          await supabase.from('profiles').update({ has_seen_tutorial: true }).eq('id', session.user.id);
+          setMyProfile((prev: any) => ({ ...prev, has_seen_tutorial: true }));
           driverObj.destroy();
         }
       });
 
       setTimeout(() => { driverObj.drive(); }, 1000); 
     }
-  }, [isLoading, session, coupleData]);
+  }, [isLoading, session, coupleData, myProfile]);
 
   const handleMoodChange = async (m: string) => {
     setMyMood(m);

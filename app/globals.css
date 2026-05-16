@@ -126,8 +126,8 @@ body {
 }
 
 /* Mũi tên chỉ (Arrow) */
-.driver-popover-arrow {
-  border-color: #fbcfe8 !important; /* Đổi màu mũi tên thành hồng */
+.no-arrow .driver-popover-arrow {
+  display: none !important;
 }
 
 /* Tiêu đề (Ví dụ: Góc Kỷ Niệm) */

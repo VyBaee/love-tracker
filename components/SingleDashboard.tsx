@@ -34,15 +34,16 @@ export default function SingleDashboard({ session, myProfile, onPaired, onProfil
   }, []);
 
   useEffect(() => {
-    if (!session?.user?.id) return;
+    if (!session?.user?.id || !myProfile) return;
 
     const singleTutorialKey = `love_tracker_single_tutorial_${session.user.id}`;
-    const hasSeenTutorial = localStorage.getItem(singleTutorialKey);
+    const hasSeenTutorial = myProfile?.has_seen_single_tutorial;
 
     if (!hasSeenTutorial) {
       const driverObj = driver({
         showProgress: true,
         animate: true,
+        popoverClass: 'no-arrow',
         nextBtnText: 'Tiếp ➔<br><span class="en-btn">Next</span>',
         prevBtnText: '⬅ Lùi<br><span class="en-btn">Back</span>',
         doneBtnText: 'Bắt đầu!<br><span class="en-btn">Let\'s go!</span>',
@@ -73,15 +74,16 @@ export default function SingleDashboard({ session, myProfile, onPaired, onProfil
             side: "left", align: 'center' 
           } },
         ],
-        onDestroyStarted: () => {
+        onDestroyStarted: async () => {
           localStorage.setItem(singleTutorialKey, 'true');
+          await supabase.from('profiles').update({ has_seen_single_tutorial: true }).eq('id', session.user.id);
+          if (onProfileUpdated) onProfileUpdated();
           driverObj.destroy();
         }
       });
-
       setTimeout(() => { driverObj.drive(); }, 800);
     }
-  }, [session?.user?.id]);
+  }, [session?.user?.id, myProfile]);
 
   const fetchInvites = async () => {
     const { data } = await supabase.from('pairing_invites').select('*, sender:profiles!sender_id(display_name)').eq('receiver_email', session.user.email).eq('status', 'pending');
