@@ -53,6 +53,8 @@ export default function Home() {
   const [showMoodMenu, setShowMoodMenu] = useState(false);
   const moods = ['🥰', '😊', '😢', '😠', '😴', '🤒'];
 
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
   const [locale, setLocale] = useState<Locale>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem('user_locale') as Locale) || 'vi';
@@ -89,8 +91,16 @@ export default function Home() {
     let { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
     if (!profile) {
       const registeredName = user.user_metadata?.username || user.email?.split('@')[0];
-      const { data: newProfile } = await supabase.from('profiles').insert([{ id: user.id, email: user.email, display_name: registeredName }]).select().single();
+      // Tự sinh UID 6 số ngẫu nhiên khi tạo mới profile
+      const randomUid = Math.floor(10000000 + Math.random() * 90000000).toString();
+      const { data: newProfile } = await supabase.from('profiles').insert([{ id: user.id, email: user.email, display_name: registeredName, uid: randomUid }]).select().single();
       profile = newProfile;
+    }
+    
+    if (profile && !profile.uid) {
+      const randomUid = Math.floor(10000000 + Math.random() * 90000000).toString();
+      const { data: updatedProfile } = await supabase.from('profiles').update({ uid: randomUid }).eq('id', user.id).select().single();
+      if (updatedProfile) profile = updatedProfile;
     }
     setMyProfile(profile);
 
@@ -238,6 +248,14 @@ export default function Home() {
     }
   }, [isLoading, session, coupleData, myProfile]);
 
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
   const handleMoodChange = async (m: string) => {
     setMyMood(m);
     setShowMoodMenu(false);
@@ -347,13 +365,31 @@ export default function Home() {
                 {myProfile?.avatar_url ? <img src={myProfile.avatar_url} className="w-full h-full object-cover" alt="avatar" /> : displayName.charAt(0)}
               </button>
               {showProfileMenu && (
-                <div className="absolute top-14 right-0 w-52 bg-white/95 backdrop-blur-md border border-slate-50 rounded-2xl shadow-cute-lg py-2 animate-fade-in origin-top-right">
-                  <div className="px-4 py-3 border-b border-slate-50 mb-1">
-                    <p className="text-sm font-bold text-slate-700 truncate">{displayName}</p>
-                    <p className="text-[11px] text-slate-500 truncate mt-0.5">{session.user.email}</p>
+                <div className="absolute top-14 right-0 w-52 bg-white dark:bg-slate-900 border border-slate-50 dark:border-slate-800 rounded-2xl shadow-cute-lg py-2 animate-fade-in origin-top-right z-50">
+                  <div className="px-4 py-3 border-b border-slate-50 dark:border-slate-800 mb-1">
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">{displayName}</p>
+                    <p className="text-[11px] text-slate-400 truncate mt-0.5">ID: {myProfile?.uid || '------'}</p>
                   </div>
-                  <button onClick={() => { setShowProfileModal(true); setShowProfileMenu(false); }} className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 hover:bg-theme-50 transition-colors">{t.profile.edit}</button>
-                  <button onClick={() => supabase.auth.signOut()} className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 hover:bg-theme-50 transition-colors">{t.profile.logout}</button>
+                  <button onClick={() => { setShowProfileModal(true); setShowProfileMenu(false); }} className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-theme-50 dark:hover:bg-slate-800 transition-colors">{t.profile.edit}</button>
+                  
+                  {/* === NÚT LIGHT / DARK MODE THÊM Ở ĐÂY === */}
+                  <button 
+                    onClick={() => {
+                      const newMode = !isDarkMode;
+                      setIsDarkMode(newMode);
+                      localStorage.setItem('theme', newMode ? 'dark' : 'light');
+                      if (newMode) document.documentElement.classList.add('dark');
+                      else document.documentElement.classList.remove('dark');
+                    }}
+                    className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-theme-50 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    {isDarkMode 
+                      ? (locale === 'vi' ? 'Chế độ Sáng' : 'Light Mode') 
+                      : (locale === 'vi' ? 'Chế độ Tối' : 'Dark Mode')}
+                  </button>
+                  {/* ========================================= */}
+
+                  <button onClick={() => supabase.auth.signOut()} className="w-full text-left px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">{t.profile.logout}</button>
                 </div>
               )}
             </div>

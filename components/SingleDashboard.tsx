@@ -14,7 +14,8 @@ export default function SingleDashboard({ session, myProfile, onPaired, onProfil
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
-  const [invites, setInvites] = useState<any[]>([]);
+  const [inviteUid, setInviteUid] = useState(''); 
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [toastMessage, setToastMessage] = useState('');
 
@@ -85,6 +86,12 @@ export default function SingleDashboard({ session, myProfile, onPaired, onProfil
     }
   }, [session?.user?.id, myProfile]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsDarkMode(localStorage.getItem('theme') === 'dark');
+    }
+  }, []);
+
   const fetchInvites = async () => {
     const { data } = await supabase.from('pairing_invites').select('*, sender:profiles!sender_id(display_name)').eq('receiver_email', session.user.email).eq('status', 'pending');
     if (data) setInvites(data);
@@ -97,14 +104,30 @@ export default function SingleDashboard({ session, myProfile, onPaired, onProfil
 
   const handleSendInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (inviteEmail === session.user.email) {
+    const targetUid = inviteUid.trim();
+
+    if (targetUid === myProfile?.uid) {
       showToast(t.toastSelf);
       return;
     }
-    const { error } = await supabase.from('pairing_invites').insert([{ sender_id: session.user.id, receiver_email: inviteEmail }]);
+
+    // Thực hiện tìm kiếm Email dựa trên mã UID được nhập vào
+    const { data: targetUser, error: findError } = await supabase
+      .from('profiles')
+      .select('email, id')
+      .eq('uid', targetUid)
+      .maybeSingle();
+
+    if (findError || !targetUser) {
+      showToast(locale === 'vi' ? 'Không tìm thấy người dùng với ID này!' : 'User ID not found!');
+      return;
+    }
+
+    // Gửi lời mời kết đôi bằng email đã tìm thấy
+    const { error } = await supabase.from('pairing_invites').insert([{ sender_id: session.user.id, receiver_email: targetUser.email }]);
     if (!error) {
       showToast(t.toastSuccess);
-      setInviteEmail('');
+      setInviteUid('');
       setShowInviteModal(false);
     } else {
       showToast(t.toastError);
@@ -179,20 +202,38 @@ export default function SingleDashboard({ session, myProfile, onPaired, onProfil
             )}
           </button>
           {showProfileMenu && (
-            <div className="absolute top-14 right-0 w-52 bg-white/95 backdrop-blur-md border border-slate-50 rounded-2xl shadow-cute-lg py-2 animate-fade-in origin-top-right">
-              <div className="px-4 py-3 border-b border-slate-50 mb-1">
-                <p className="text-sm font-bold text-slate-700 truncate">{displayName}</p>
-                <p className="text-[11px] text-slate-500 truncate mt-0.5">{session.user.email}</p>
+            <div className="absolute top-14 right-0 w-52 bg-white dark:bg-slate-900 border border-slate-50 dark:border-slate-800 rounded-2xl shadow-cute-lg py-2 animate-fade-in origin-top-right">
+              <div className="px-4 py-3 border-b border-slate-50 dark:border-slate-800 mb-1">
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">{displayName}</p>
+                <p className="text-[11px] text-slate-400 truncate mt-0.5">ID: {myProfile?.uid || '------'}</p>
               </div>
               <button
                 onClick={() => { setShowProfileModal(true); setShowProfileMenu(false); }}
-                className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 hover:bg-theme-50 transition-colors"
+                className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-theme-50 dark:hover:bg-slate-800 transition-colors"
               >
                 {t.editProfileLabel || translations[locale].profile.edit}
               </button>
+
+              {/* === NÚT LIGHT / DARK MODE MÀN SINGLE === */}
+              <button 
+                    onClick={() => {
+                      const newMode = !isDarkMode;
+                      setIsDarkMode(newMode);
+                      localStorage.setItem('theme', newMode ? 'dark' : 'light');
+                      if (newMode) document.documentElement.classList.add('dark');
+                      else document.documentElement.classList.remove('dark');
+                    }}
+                    className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-theme-50 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    {isDarkMode 
+                      ? (locale === 'vi' ? 'Chế độ Sáng' : 'Light Mode') 
+                      : (locale === 'vi' ? 'Chế độ Tối' : 'Dark Mode')}
+                  </button>
+              {/* ======================================== */}
+
               <button
                 onClick={() => supabase.auth.signOut()}
-                className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 hover:bg-theme-50 transition-colors"
+                className="w-full text-left px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
               >
                 {t.logoutLabel || translations[locale].profile.logout}
               </button>
@@ -227,7 +268,14 @@ export default function SingleDashboard({ session, myProfile, onPaired, onProfil
             <h2 className="font-bold text-theme-600 text-xl mb-2 mt-4">{t.inviteModalHeader}</h2>
             <p className="text-sm text-slate-500 mb-6 px-2">{t.inviteModalDesc}</p>
             <form onSubmit={handleSendInvite} className="space-y-4">
-              <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder={t.invitePlaceholder} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm outline-none focus:border-theme-400 shadow-inner text-center" required />
+              <input 
+                type="text" 
+                value={inviteUid} 
+                onChange={(e) => setInviteUid(e.target.value)} 
+                placeholder={locale === 'vi' ? "Nhập mã số ID (6 chữ số)..." : "Enter User ID (6 digits)..."} 
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm outline-none focus:border-theme-400 shadow-inner text-center font-bold text-slate-700 dark:text-slate-200" 
+                required 
+              />
               <button type="submit" className="btn-cute w-full py-4 text-sm rounded-2xl shadow-cute">
                 {t.btnSendInvite}
               </button>
