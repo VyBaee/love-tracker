@@ -52,7 +52,7 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
 
     // 2. Nếu CHƯA CÓ, nhờ AI suy nghĩ
     if (!qData) {
-      setTodayQuestion("Đang nhờ AI suy nghĩ câu hỏi... 🤔");
+      setTodayQuestion(t.aiThinking);
       try {
         const res = await fetch('/api/question');
         const aiData = await res.json();

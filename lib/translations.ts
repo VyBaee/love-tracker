@@ -11,7 +11,7 @@ export const translations = {
     expBar: { anniversary: "Kỷ niệm", year: "năm", daysLeft: "Còn {count} ngày" },
     bucketList: { title: "Danh sách ước nguyện", progress: "Tiến độ thực hiện", placeholder: "Hai đứa mình sẽ cùng làm gì tiếp theo?", loading: "Đang tải..." },
     dailyPrompt: {
-      title: "Câu hỏi hôm nay", fallbackQuestion: "Hôm nay bạn có nhớ người ấy không?", partnerAnswered: "Câu trả lời của {name}", partnerNotAnswered: "Người ấy chưa trả lời câu hỏi hôm nay...",
+      title: "Câu hỏi hôm nay", aiThinking: 'Đang nhờ AI suy nghĩ câu hỏi...', partnerAnswered: "Câu trả lời của {name}", partnerNotAnswered: "Người ấy chưa trả lời câu hỏi hôm nay...",
       hiddenAnswer: "Nội dung đã bị ẩn đi một cách đầy bí ẩn... Người ấy đang chờ bạn đó!", replyToSee: "Trả lời để xem", yourAnswer: "Câu trả lời của bạn", placeholder: "Nhập suy nghĩ của bạn vào đây...", btnSubmitting: "Đang gửi...", btnSubmit: "Gửi câu trả lời"
     },
     memoryTimeline: {
@@ -22,10 +22,11 @@ export const translations = {
     },
     settingsModal: { title: "Cài đặt", startDate: "Ngày bắt đầu", themeColor: "Màu sắc chủ đề", hexCode: "Mã màu: {color}", btnSave: "Lưu", btnSaving: "Đang lưu..." },
     singleDashboard: {
-      toastSelf: "Không thể tự gửi cho chính mình", toastSuccess: "Đã gửi lời mời ghép đôi thành công", toastError: "Có lỗi xảy ra, vui lòng thử lại",
-      welcomeTitle: "Chào mừng, {name}!", emptyTitle: "Nhà chung đang trống...", emptyDesc: "Lưu giữ kỷ niệm, kết nối yêu thương cùng người ấy ngay hôm nay nhé.",
-      btnInvite: "Kết nối yêu thương", inviteModalHeader: "Tìm kiếm một nửa", inviteModalDesc: "Nhập email của người ấy để gửi lời mời ghép đôi nhé", invitePlaceholder: "email@gmail.com",
-      btnSendInvite: "Gửi lời mời", notifModalHeader: "Yêu cầu ghép đôi", notifModalEmpty: "Hiện tại không có yêu cầu nào", notifItemHeader: "Yêu cầu ghép đôi", fromText: "Từ: {name}", labelUS: "English", labelVI: "Tiếng Việt", labelNotif: "Thông báo"
+      toastSelf: "Bạn không thể kết đôi với chính mình!", toastSuccess: "Đã gửi lời mời ghép đôi thành công", toastError: "Gửi lời mời thất bại!",
+      welcomeTitle: "Chào mừng, {name}!", emptyTitle: 'Trông bạn thật trống trải...', emptyDesc: 'Hãy ghép đôi để cùng nhau xây dựng tổ ấm nhỏ nhé.', myIdLabel: 'Mã số ID của bạn:', inputPartnerIdPlaceholder: 'Nhập mã số ID đối phương (8 số)...',
+      inputMessagePlaceholder: 'Nhập câu tỏ tình hoặc lời mời (không bắt buộc)...', btnAccept: 'Đồng ý', btnReject: 'Từ chối',
+      btnInvite: 'Gửi lời mời kết đôi', inviteModalHeader: 'Hộp thư lời mời', waitingPartner: 'Đang đợi nửa kia kết nối...', waitingPartnerDesc: 'Gửi mã số ID cho đối phương hoặc chủ động điền mã của họ bên cột trái nhé!',
+      youHaveInvite: 'Bạn nhận được lời mời!', acceptDescription: 'Mở cánh cửa để cùng nhau xây dựng thế giới riêng nào.', labelUS: "English", labelVI: "Tiếng Việt", labelNotif: "Thông báo"
     },
     auth: {
       verifyEmail: "Xác thực Email", login: "Đăng nhập", register: "Tạo tài khoản", otpSentTo: "Chúng mình đã gửi mã gồm 6 số đến", placeholderOTP: "------",
@@ -46,6 +47,10 @@ export const translations = {
     avatarPlayer: {
       loading: "Đang tải...", unknownZodiac: "Chưa rõ", age: "{age} tuổi", unknownAge: "???",
       zodiacNames: ["Bạch Dương", "Kim Ngưu", "Song Tử", "Cự Giải", "Sư Tử", "Xử Nữ", "Thiên Bình", "Bọ Cạp", "Nhân Mã", "Ma Kết", "Bảo Bình", "Song Ngư"]
+    },
+    introScreen: {
+      loginBtn: 'Đăng nhập',titleLine1: 'Lưu giữ tình yêu', titleLine2: 'hoàn hảo nhất', description: 'Không gian kỹ thuật số sang trọng dành riêng cho hai bạn. Nơi đếm những ngày yêu, lưu trữ kỷ niệm và cùng nhau viết lên những ước nguyện tương lai.',
+      startBtn: 'Bắt đầu hành trình', githubBtn: 'Star on Github', daysTogether: 'Đã bên nhau', days: 'ngày', newMemory: 'Kỷ niệm mới', justUploaded: 'Vừa được tải lên'
     }
   },
   en: {
@@ -60,7 +65,7 @@ export const translations = {
     expBar: { anniversary: "Anniversary", year: "years", daysLeft: "{count} days left" },
     bucketList: { title: "Bucket List", progress: "Progress", placeholder: "What will we do next?", loading: "Loading..." },
     dailyPrompt: {
-      title: "Today's Prompt", fallbackQuestion: "Did you miss your partner today?", partnerAnswered: "{name}'s answer", partnerNotAnswered: "Your partner hasn't answered today's prompt yet...",
+      title: "Today's Prompt", aiThinking: "Asking AI for a question...", partnerAnswered: "{name}'s answer", partnerNotAnswered: "Your partner hasn't answered today's prompt yet...",
       hiddenAnswer: "The content is mysteriously hidden... Your partner is waiting for you!", replyToSee: "Reply to see", yourAnswer: "Your Answer", placeholder: "Type your thoughts here...", btnSubmitting: "Sending...", btnSubmit: "Submit answer"
     },
     memoryTimeline: {
@@ -71,10 +76,11 @@ export const translations = {
     },
     settingsModal: { title: "Settings", startDate: "Start Date", themeColor: "Theme Color", hexCode: "Hex Code: {color}", btnSave: "Save", btnSaving: "Saving..." },
     singleDashboard: {
-      toastSelf: "Cannot send an invite to yourself", toastSuccess: "Pairing invite sent successfully", toastError: "An error occurred, please try again",
-      welcomeTitle: "Welcome, {name}!", emptyTitle: "Your shared home is empty...", emptyDesc: "Start saving memories and connect with your partner today.",
-      btnInvite: "Connect Now", inviteModalHeader: "Connect with Partner", inviteModalDesc: "Enter your partner's email to send a pairing request.", invitePlaceholder: "email@gmail.com",
-      btnSendInvite: "Send Invitation", notifModalHeader: "Pairing Requests", notifModalEmpty: "No pending requests at the moment", notifItemHeader: "Pairing Request", fromText: "From: {name}", labelUS: "English", labelVI: "Tiếng Việt", labelNotif: "Notifications"
+      toastSelf: "You cannot pair with yourself!", toastSuccess: "Pairing invitation sent successfully", toastError: "Failed to send pairing invitation!",
+      welcomeTitle: "Welcome, {name}!", emptyTitle: 'It looks pretty empty...', emptyDesc: 'Pair up to start building your little world together.', myIdLabel: 'Your ID:', inputPartnerIdPlaceholder: 'Enter partner ID (8 digits)...',
+      inputMessagePlaceholder: 'Enter a love confession or invitation message (optional)...', btnAccept: 'Accept', btnReject: 'Reject',
+      btnInvite: 'Send Pairing Invitation', inviteModalHeader: 'Pairing Invitation Inbox', waitingPartner: 'Waiting for your partner to connect...', waitingPartnerDesc: 'Share your ID with your partner or proactively enter their ID on the left column!',
+      youHaveInvite: 'You have a pairing invitation!', acceptDescription: 'Open the door to build your private world together.', labelUS: "English", labelVI: "Tiếng Việt", labelNotif: "Notifications"
     },
     auth: {
       verifyEmail: "Verify Email", login: "Log in", register: "Create Account", otpSentTo: "We sent a 6-digit code to", placeholderOTP: "------",
@@ -95,6 +101,10 @@ export const translations = {
     avatarPlayer: {
       loading: "Loading...", unknownZodiac: "Unknown", age: "{age} yrs", unknownAge: "???",
       zodiacNames: ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"]
+    },
+    introScreen: {
+      loginBtn: 'Log in', titleLine1: 'Preserve your love', titleLine2: 'in the most perfect way', description: 'A luxurious digital space just for two. Where you can count the days, store memories, and write future wishes together.',
+      startBtn: 'Start your journey', githubBtn: 'Star on Github', daysTogether: 'Days Together', days: 'days', newMemory: 'New Memory', justUploaded: 'Just uploaded'
     }
   }
 };

@@ -12,6 +12,7 @@ import FloatingHearts from '../components/FloatingHearts';
 import Auth from '../components/Auth';
 import SingleDashboard from '../components/SingleDashboard';
 import ProfileModal from '../components/ProfileModal';
+import IntroScreen from '../components/IntroScreen';
 import { supabase } from '../lib/supabase';
 import { translations, Locale } from '../lib/translations';
 import { driver } from 'driver.js';
@@ -28,6 +29,7 @@ const getAge = (dob: string) => {
 export default function Home() {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasStartedIntro, setHasStartedIntro] = useState(false); // Trạng thái luồng Intro
 
   const [myProfile, setMyProfile] = useState<any>(null);
   const [coupleData, setCoupleData] = useState<any>(null);
@@ -62,17 +64,25 @@ export default function Home() {
     return 'vi';
   });
 
-  // Tạo một hàm đổi ngôn ngữ mới để lưu luôn vào máy
   const handleLocaleChange = (newLocale: Locale) => {
     setLocale(newLocale);
     localStorage.setItem('user_locale', newLocale);
   };
 
-  const t = translations[locale]; // Biến t để truy xuất nhanh
+  const t = translations[locale];
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      
+      // BẮT SỰ KIỆN ĐĂNG XUẤT ĐỂ ĐẨY VỀ MÀN HÌNH INTRO
+      if (event === 'SIGNED_OUT') {
+        setHasStartedIntro(false); 
+      }
+    });
+    
     return () => subscription.unsubscribe();
   }, []);
 
@@ -91,7 +101,6 @@ export default function Home() {
     let { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
     if (!profile) {
       const registeredName = user.user_metadata?.username || user.email?.split('@')[0];
-      // Tự sinh UID 6 số ngẫu nhiên khi tạo mới profile
       const randomUid = Math.floor(10000000 + Math.random() * 90000000).toString();
       const { data: newProfile } = await supabase.from('profiles').insert([{ id: user.id, email: user.email, display_name: registeredName, uid: randomUid }]).select().single();
       profile = newProfile;
@@ -216,7 +225,7 @@ export default function Home() {
             side: "top", align: 'center' 
           } },
           { element: '#question-btn', popover: { 
-            title: '<div class="vi-title">Câu Hỏi Hàng Ngày</div><div class="en-title">Daily Prompts</div>', 
+            title: '<div class="vi-title">Câu Hỏi Hàng Daily</div><div class="en-title">Daily Prompts</div>', 
             description: '<div class="vi-desc">Mỗi ngày 1 câu hỏi. Phải trả lời mới xem được đáp án của người kia!</div><div class="en-desc">Answer the daily question to see your partner\'s response!</div>', 
             side: "top", align: 'center' 
           } },
@@ -264,7 +273,22 @@ export default function Home() {
     }
   };
 
-  if (!session) return <Auth />;
+  // KIỂM TRA ĐIỀU HƯỚNG LUỒNG MÀN HÌNH CHƯA ĐĂNG NHẬP
+  if (!session) {
+    if (!hasStartedIntro) {
+      return (
+        <IntroScreen 
+          onStart={() => setHasStartedIntro(true)} 
+          locale={locale} 
+          setLocale={handleLocaleChange}
+          isDarkMode={isDarkMode}
+          setIsDarkMode={setIsDarkMode}
+        />
+      );
+    }
+    return <Auth />;
+  }
+  
   if (isLoading) return <div className="flex min-h-screen items-center justify-center"><div className="animate-pulse w-10 h-10 bg-slate-200 rounded-full"></div></div>;
 
   const displayName = appData.myName || myProfile?.display_name || 'Người dùng';
@@ -279,7 +303,6 @@ export default function Home() {
 
       <FloatingHearts />
 
-      {/* NÚT HUỶ GHÉP ĐÔI (FAB) */}
       {coupleData && (
         <button
           id="unpair-btn"
@@ -291,7 +314,6 @@ export default function Home() {
         </button>
       )}
 
-      {/* MODAL XÁC NHẬN HUỶ */}
       {showUnpairConfirm && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] px-4">
           <div className="bg-white p-8 rounded-[2rem] w-full max-w-sm text-center shadow-cute-lg animate-fade-in relative">
@@ -305,7 +327,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL BÁO ĐÃ GỬI */}
       {showUnpairSent && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] px-4">
           <div className="bg-white p-8 rounded-[2rem] w-full max-w-sm text-center shadow-cute-lg animate-fade-in">
@@ -316,7 +337,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL ĐỐI PHƯƠNG NHẬN ĐƯỢC */}
       {showUnpairPopup && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] px-4">
           <div className="bg-white p-8 rounded-[2rem] w-full max-w-sm text-center shadow-cute-lg animate-fade-in relative border-t-4 border-red-400">
@@ -331,6 +351,7 @@ export default function Home() {
       )}
 
       {!coupleData ? (
+        // ĐIỀU HƯỚNG VÀO DASHBOARD ĐƠN THÂN (SPLIT LAYOUT MỚI)
         <SingleDashboard
           session={session}
           myProfile={myProfile}
@@ -339,40 +360,42 @@ export default function Home() {
         />
       ) : (
         <>
-          {/* MENU CÁ NHÂN GÓC PHẢI TRÊN */}
+          {/* TOP RIGHT MENU CHO MÀN ĐÃ GHÉP ĐÔI */}
           <div className="fixed top-6 right-8 z-50 flex items-center gap-3">
-            {/* Bộ chuyển ngôn ngữ */}
             <div className="flex items-center bg-white/80 backdrop-blur-md p-1 rounded-2xl border border-slate-100 shadow-sm">
-              <button
-                onClick={() => setLocale('vi')}
-                className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${locale === 'vi' ? 'bg-theme-100 scale-105 shadow-sm' : 'hover:bg-slate-50 opacity-60 grayscale'}`}
-                title="Tiếng Việt"
-              >
-                <img src="https://flagcdn.com/w40/vn.png" alt="VN" className="w-5 h-auto rounded-[2px] shadow-sm" />
+              <button onClick={() => handleLocaleChange('vi')} className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${locale === 'vi' ? 'bg-theme-100 scale-105 shadow-sm' : 'hover:bg-slate-50 opacity-60 grayscale'}`}>
+                <img src="https://flagcdn.com/w40/vn.png" alt="VN" className="w-5 h-auto rounded-[2px]" />
               </button>
-              <button
-                onClick={() => setLocale('en')}
-                className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${locale === 'en' ? 'bg-theme-100 scale-105 shadow-sm' : 'hover:bg-slate-50 opacity-60 grayscale'}`}
-                title="English"
-              >
-                <img src="https://flagcdn.com/w40/us.png" alt="US" className="w-5 h-auto rounded-[2px] shadow-sm" />
+              <button onClick={() => handleLocaleChange('en')} className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${locale === 'en' ? 'bg-theme-100 scale-105 shadow-sm' : 'hover:bg-slate-50 opacity-60 grayscale'}`}>
+                <img src="https://flagcdn.com/w40/us.png" alt="US" className="w-5 h-auto rounded-[2px]" />
               </button>
             </div>
 
-            {/* Avatar */}
             <div className="relative">
               <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="w-12 h-12 rounded-full bg-white/90 backdrop-blur-md border border-slate-100 shadow-cute overflow-hidden flex items-center justify-center hover:scale-105 transition-transform">
                 {myProfile?.avatar_url ? <img src={myProfile.avatar_url} className="w-full h-full object-cover" alt="avatar" /> : displayName.charAt(0)}
               </button>
               {showProfileMenu && (
-                <div className="absolute top-14 right-0 w-52 bg-white dark:bg-slate-900 border border-slate-50 dark:border-slate-800 rounded-2xl shadow-cute-lg py-2 animate-fade-in origin-top-right z-50">
-                  <div className="px-4 py-3 border-b border-slate-50 dark:border-slate-800 mb-1">
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">{displayName}</p>
-                    <p className="text-[11px] text-slate-400 truncate mt-0.5">ID: {myProfile?.uid || '------'}</p>
+                <div className="absolute top-14 right-0 w-52 bg-white border border-slate-50 rounded-2xl shadow-cute-lg py-2 animate-fade-in origin-top-right z-50">
+                  <div className="px-4 py-3 border-b border-slate-50 mb-1">
+                    <p className="text-sm font-bold text-slate-700 truncate">{displayName}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <p className="text-[11px] text-slate-400 truncate">ID: {myProfile?.uid || '------'}</p>
+                      {myProfile?.uid && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(myProfile.uid);
+                          }}
+                          className="text-slate-400 hover:text-theme-500 transition-all p-0.5"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <button onClick={() => { setShowProfileModal(true); setShowProfileMenu(false); }} className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-theme-50 dark:hover:bg-slate-800 transition-colors">{t.profile.edit}</button>
+                  <button onClick={() => { setShowProfileModal(true); setShowProfileMenu(false); }} className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 hover:bg-theme-50 transition-colors">{t.profile.edit}</button>
                   
-                  {/* === NÚT LIGHT / DARK MODE THÊM Ở ĐÂY === */}
                   <button 
                     onClick={() => {
                       const newMode = !isDarkMode;
@@ -381,28 +404,25 @@ export default function Home() {
                       if (newMode) document.documentElement.classList.add('dark');
                       else document.documentElement.classList.remove('dark');
                     }}
-                    className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-theme-50 dark:hover:bg-slate-800 transition-colors"
+                    className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 hover:bg-theme-50 transition-colors"
                   >
-                    {isDarkMode 
-                      ? (locale === 'vi' ? 'Chế độ Sáng' : 'Light Mode') 
-                      : (locale === 'vi' ? 'Chế độ Tối' : 'Dark Mode')}
+                    {isDarkMode ? (locale === 'vi' ? 'Chế độ Sáng' : 'Light Mode') : (locale === 'vi' ? 'Chế độ Tối' : 'Dark Mode')}
                   </button>
-                  {/* ========================================= */}
 
-                  <button onClick={() => supabase.auth.signOut()} className="w-full text-left px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">{t.profile.logout}</button>
+                  <button onClick={() => supabase.auth.signOut()} className="w-full text-left px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors">{t.profile.logout}</button>
                 </div>
               )}
             </div>
           </div>
 
+          {/* DASHBOARD KẾT ĐÔI CHÍNH */}
           <div className="w-full max-w-md lg:max-w-5xl bg-white/80 backdrop-blur-xl p-6 lg:p-10 rounded-[2.5rem] shadow-cute relative z-10 border border-white overflow-hidden min-h-[650px] lg:h-[750px] mt-10 lg:mt-12 flex flex-col lg:flex-row gap-0 lg:gap-10">
-
             <div className={`w-full lg:w-[40%] h-full flex-col justify-between relative ${currentView !== 'home' ? 'hidden lg:flex' : 'flex'}`}>
               <div className="flex-1 flex flex-col">
                 <div className="flex justify-between items-center mt-6 mb-10 px-2 lg:px-0">
                   <div className="relative flex flex-col items-center">
                     <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center">
-                      <button onClick={() => setShowMoodMenu(!showMoodMenu)} className="bg-white border border-slate-100 shadow-sm px-2.5 py-1 rounded-full text-base hover:scale-110 transition-transform flex items-center gap-1">
+                      <button onClick={() => setShowMoodMenu(!showMoodMenu)} className="bg-white border border-slate-100 shadow-sm px-2.5 py-1 rounded-full text-base flex items-center gap-1">
                         {myMood}
                         <svg className="w-2.5 h-2.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
                       </button>
@@ -416,18 +436,12 @@ export default function Home() {
                     </div>
                     <AvatarPlayer locale={locale} name={appData.myName} image={appData.myImage} zodiac={appData.myZodiac} age={getAge(appData.myDob)} />
                   </div>
-
                   <div className="flex flex-col items-center justify-center relative mt-[-20px]">
-                    <div style={{ backgroundColor: appData.theme }} className="absolute w-20 h-20 rounded-full filter blur-xl animate-pulse opacity-20"></div>
                     <svg style={{ color: appData.theme }} className="w-12 h-12 lg:w-16 lg:h-16 drop-shadow-md z-10 animate-bounce" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
                   </div>
-
                   <div className="relative flex flex-col items-center">
                     <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-20">
-                      <div className="bg-slate-50 border border-slate-100 shadow-sm px-2.5 py-1 rounded-full text-base cursor-help"
-                        title={t.profile.partnerMood.replace('{name}', appData.partnerName).replace('{mood}', partnerMood)}>
-                        {partnerMood}
-                      </div>
+                      <div className="bg-slate-50 border border-slate-100 shadow-sm px-2.5 py-1 rounded-full text-base">{partnerMood}</div>
                     </div>
                     <AvatarPlayer locale={locale} name={appData.partnerName} image={appData.partnerImage} zodiac={appData.partnerZodiac} age={getAge(appData.partnerDob)} />
                   </div>
@@ -441,7 +455,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* ĐÃ THÊM locale={locale} */}
                 <ExpBar locale={locale} daysRemaining={daysRemaining} nextAnniversaryYear={nextAnniYear} progressWidth={progressWidth} />
 
                 <div className="grid grid-cols-2 gap-3 mt-8">
@@ -463,12 +476,10 @@ export default function Home() {
 
             <div className={`w-full lg:w-[60%] h-[650px] lg:h-full relative ${currentView === 'home' ? 'hidden lg:flex' : 'flex'}`}>
               {currentView === 'home' && (
-                <div className="w-full h-full flex flex-col items-center justify-center animate-fade-in text-center p-6">
-                  <svg className="w-24 h-24 mb-6 text-slate-300 opacity-80 mx-auto" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
-                  <p className="font-bold tracking-widest uppercase text-[11px] text-slate-400 leading-loose">{t.dashboard.emptyState}</p>
+                <div className="w-full h-full flex flex-col items-center justify-center text-center p-6">
+                  <p className="font-bold tracking-widest uppercase text-[11px] text-slate-400">{t.dashboard.emptyState}</p>
                 </div>
               )}
-              {/* ĐÃ THÊM locale={locale} VÀO TẤT CẢ TÍNH NĂNG Ở ĐÂY */}
               {currentView === 'memories' && <MemoryTimeline locale={locale} onBack={() => setCurrentView('home')} coupleId={coupleData.id} currentUser={session.user} />}
               {currentView === 'prompts' && <DailyPrompt locale={locale} onBack={() => setCurrentView('home')} coupleId={coupleData.id} currentUser={session.user} partnerName={appData.partnerName} />}
               {currentView === 'bucket_list' && <BucketList locale={locale} onBack={() => setCurrentView('home')} coupleId={coupleData.id} />}
@@ -477,7 +488,6 @@ export default function Home() {
         </>
       )}
 
-      {/* ĐÃ THÊM locale={locale} VÀO CÁC MODAL */}
       <SettingsModal locale={locale} isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} currentData={appData} onSave={async (newData: any) => {
         setAppData({ ...appData, startDate: newData.startDate, theme: newData.theme });
         await supabase.from('couples').update({ start_date: newData.startDate, theme: newData.theme }).eq('id', coupleData.id);
