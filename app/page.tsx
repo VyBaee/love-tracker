@@ -28,8 +28,9 @@ const getAge = (dob: string) => {
 
 export default function Home() {
   const [session, setSession] = useState<Session | null>(null);
+  const [showAuth, setShowAuth] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasStartedIntro, setHasStartedIntro] = useState(false); // Trạng thái luồng Intro
+  const [hasStartedIntro, setHasStartedIntro] = useState(false);
 
   const [myProfile, setMyProfile] = useState<any>(null);
   const [coupleData, setCoupleData] = useState<any>(null);
@@ -73,28 +74,25 @@ export default function Home() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
-    
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
-      
-      // BẮT SỰ KIỆN ĐĂNG XUẤT ĐỂ ĐẨY VỀ MÀN HÌNH INTRO
       if (event === 'SIGNED_OUT') {
-        setHasStartedIntro(false); 
+        setHasStartedIntro(false);
       }
     });
-    
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchAppData = async () => {
+  // ĐÃ SỬA: Thêm tham số showLoadingScreen để Fetch data ngầm mà không gây chớp giật
+  const fetchAppData = async (showLoadingScreen = true) => {
     if (!session) return;
-    setIsLoading(true);
+    if (showLoadingScreen) setIsLoading(true);
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       await supabase.auth.signOut();
       setSession(null);
-      setIsLoading(false);
+      if (showLoadingScreen) setIsLoading(false);
       return;
     }
 
@@ -138,10 +136,35 @@ export default function Home() {
       setAppData({ startDate: '', theme: '#ec4899', myName: profile?.display_name || '' });
       setShowUnpairPopup(false);
     }
-    setIsLoading(false);
+    if (showLoadingScreen) setIsLoading(false);
   };
 
-  useEffect(() => { fetchAppData(); }, [session]);
+  // ĐÃ SỬA: Chỉ load lại lần đầu tiên (hoặc khi đổi tài khoản khác hoàn toàn)
+  useEffect(() => { 
+    if (session?.user?.id) fetchAppData(true); 
+  }, [session?.user?.id]);
+
+  // ĐÃ THÊM: Logic lắng nghe trạng thái rời Tab giống mạng xã hội lớn
+  useEffect(() => {
+    let hiddenTime: number | null = null;
+    const REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 phút
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        hiddenTime = Date.now();
+      } else {
+        if (hiddenTime && Date.now() - hiddenTime > REFRESH_THRESHOLD) {
+          // Chỉ lấy dữ liệu ngầm nếu đã rời đi quá 5 phút (Không chớp loading)
+          if (session?.user?.id) fetchAppData(false); 
+        }
+        hiddenTime = null;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [session?.user?.id]);
+
 
   const confirmRequestUnpair = async () => {
     setUnpairLoading(true);
@@ -158,7 +181,7 @@ export default function Home() {
     await supabase.from('couples').delete().eq('id', coupleData.id);
     setUnpairLoading(false);
     setShowUnpairPopup(false);
-    fetchAppData();
+    fetchAppData(true);
   };
 
   const handleRejectUnpair = async () => {
@@ -166,7 +189,7 @@ export default function Home() {
     await supabase.from('couples').update({ unpair_request_by: null }).eq('id', coupleData.id);
     setUnpairLoading(false);
     setShowUnpairPopup(false);
-    fetchAppData();
+    fetchAppData(true);
   };
 
   useEffect(() => {
@@ -273,22 +296,24 @@ export default function Home() {
     }
   };
 
-  // KIỂM TRA ĐIỀU HƯỚNG LUỒNG MÀN HÌNH CHƯA ĐĂNG NHẬP
   if (!session) {
     if (!hasStartedIntro) {
       return (
         <IntroScreen 
-          onStart={() => setHasStartedIntro(true)} 
-          locale={locale} 
-          setLocale={handleLocaleChange}
-          isDarkMode={isDarkMode}
-          setIsDarkMode={setIsDarkMode}
-        />
+        onStart={() => setShowAuth(true)} // Khi ấn nút, set showAuth = true
+        showAuth={showAuth}              // Truyền state để IntroScreen biết khi nào cần trượt
+        onBack={() => setShowAuth(false)} // Nút Back từ file Auth sẽ gọi cái này
+        locale={locale} 
+        setLocale={handleLocaleChange}
+        isDarkMode={isDarkMode}
+        setIsDarkMode={setIsDarkMode}
+      />
       );
     }
-    return <Auth />;
+
+    return <Auth onBack={() => setHasStartedIntro(false)} locale={locale} />;
   }
-  
+
   if (isLoading) return <div className="flex min-h-screen items-center justify-center"><div className="animate-pulse w-10 h-10 bg-slate-200 rounded-full"></div></div>;
 
   const displayName = appData.myName || myProfile?.display_name || 'Người dùng';
@@ -351,16 +376,14 @@ export default function Home() {
       )}
 
       {!coupleData ? (
-        // ĐIỀU HƯỚNG VÀO DASHBOARD ĐƠN THÂN (SPLIT LAYOUT MỚI)
         <SingleDashboard
           session={session}
           myProfile={myProfile}
-          onPaired={fetchAppData}
-          onProfileUpdated={fetchAppData}
+          onPaired={() => fetchAppData(true)}
+          onProfileUpdated={() => fetchAppData(true)}
         />
       ) : (
         <>
-          {/* TOP RIGHT MENU CHO MÀN ĐÃ GHÉP ĐÔI */}
           <div className="fixed top-6 right-8 z-50 flex items-center gap-3">
             <div className="flex items-center bg-white/80 backdrop-blur-md p-1 rounded-2xl border border-slate-100 shadow-sm">
               <button onClick={() => handleLocaleChange('vi')} className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${locale === 'vi' ? 'bg-theme-100 scale-105 shadow-sm' : 'hover:bg-slate-50 opacity-60 grayscale'}`}>
@@ -415,7 +438,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* DASHBOARD KẾT ĐÔI CHÍNH */}
           <div className="w-full max-w-md lg:max-w-5xl bg-white/80 backdrop-blur-xl p-6 lg:p-10 rounded-[2.5rem] shadow-cute relative z-10 border border-white overflow-hidden min-h-[650px] lg:h-[750px] mt-10 lg:mt-12 flex flex-col lg:flex-row gap-0 lg:gap-10">
             <div className={`w-full lg:w-[40%] h-full flex-col justify-between relative ${currentView !== 'home' ? 'hidden lg:flex' : 'flex'}`}>
               <div className="flex-1 flex flex-col">
@@ -493,7 +515,7 @@ export default function Home() {
         await supabase.from('couples').update({ start_date: newData.startDate, theme: newData.theme }).eq('id', coupleData.id);
       }} />
 
-      <ProfileModal locale={locale} isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} myProfile={myProfile} session={session} onSaveSuccess={fetchAppData} />
+      <ProfileModal locale={locale} isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} myProfile={myProfile} session={session} onSaveSuccess={() => fetchAppData(true)} />
     </main>
   );
 }

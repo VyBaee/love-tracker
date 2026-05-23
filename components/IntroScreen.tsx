@@ -2,6 +2,7 @@
 
 import { translations, Locale } from '../lib/translations';
 import FloatingHearts from './FloatingHearts';
+import Auth from './Auth';
 
 interface IntroScreenProps {
   onStart: () => void;
@@ -11,7 +12,7 @@ interface IntroScreenProps {
   setIsDarkMode: (isDark: boolean) => void;
 }
 
-export default function IntroScreen({ onStart, locale, setLocale, isDarkMode, setIsDarkMode }: IntroScreenProps) {
+export default function IntroScreen({ onStart, showAuth, onBack, locale, setLocale, isDarkMode, setIsDarkMode }: any) {
   const t = translations[locale].introScreen;
 
   return (
@@ -32,7 +33,7 @@ export default function IntroScreen({ onStart, locale, setLocale, isDarkMode, se
         </div>
         
         <div className="flex items-center gap-2 sm:gap-4">
-          <div className={`hidden sm:flex items-center backdrop-blur-md p-1 rounded-full border shadow-sm ${isDarkMode ? 'bg-slate-800/80 border-slate-700' : 'bg-white/80 border-theme-100'}`}>
+          <div className={`flex items-center backdrop-blur-md p-1 rounded-full border shadow-sm ${isDarkMode ? 'bg-slate-800/80 border-slate-700' : 'bg-white/80 border-theme-100'}`}>
             <button onClick={() => setLocale('vi')} className={`w-8 h-8 flex items-center justify-center rounded-full transition-all ${locale === 'vi' ? (isDarkMode ? 'bg-pink-900/50 scale-105 shadow-sm' : 'bg-theme-100 scale-105 shadow-sm') : (isDarkMode ? 'hover:bg-slate-700 opacity-60 grayscale' : 'hover:bg-theme-50 opacity-60 grayscale')}`}>
               <img src="https://flagcdn.com/w40/vn.png" alt="VN" className="w-4 h-auto rounded-[2px]" />
             </button>
