@@ -9,7 +9,6 @@ import MemoryTimeline from '../components/MemoryTimeline';
 import DailyPrompt from '../components/DailyPrompt';
 import BucketList from '../components/BucketList';
 import FloatingHearts from '../components/FloatingHearts';
-import Auth from '../components/Auth';
 import SingleDashboard from '../components/SingleDashboard';
 import ProfileModal from '../components/ProfileModal';
 import IntroScreen from '../components/IntroScreen';
@@ -28,9 +27,8 @@ const getAge = (dob: string) => {
 
 export default function Home() {
   const [session, setSession] = useState<Session | null>(null);
-  const [showAuth, setShowAuth] = useState(false);
+  const [showAuth, setShowAuth] = useState(false); // CHỈ DÙNG STATE NÀY ĐỂ ĐIỀU KHIỂN TRƯỢT DỌC
   const [isLoading, setIsLoading] = useState(true);
-  const [hasStartedIntro, setHasStartedIntro] = useState(false);
 
   const [myProfile, setMyProfile] = useState<any>(null);
   const [coupleData, setCoupleData] = useState<any>(null);
@@ -77,13 +75,12 @@ export default function Home() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       if (event === 'SIGNED_OUT') {
-        setHasStartedIntro(false);
+        setShowAuth(false); // Khi đăng xuất thì đóng panel trượt dọc lại
       }
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  // ĐÃ SỬA: Thêm tham số showLoadingScreen để Fetch data ngầm mà không gây chớp giật
   const fetchAppData = async (showLoadingScreen = true) => {
     if (!session) return;
     if (showLoadingScreen) setIsLoading(true);
@@ -139,22 +136,19 @@ export default function Home() {
     if (showLoadingScreen) setIsLoading(false);
   };
 
-  // ĐÃ SỬA: Chỉ load lại lần đầu tiên (hoặc khi đổi tài khoản khác hoàn toàn)
   useEffect(() => { 
     if (session?.user?.id) fetchAppData(true); 
   }, [session?.user?.id]);
 
-  // ĐÃ THÊM: Logic lắng nghe trạng thái rời Tab giống mạng xã hội lớn
   useEffect(() => {
     let hiddenTime: number | null = null;
-    const REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 phút
+    const REFRESH_THRESHOLD = 5 * 60 * 1000; 
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
         hiddenTime = Date.now();
       } else {
         if (hiddenTime && Date.now() - hiddenTime > REFRESH_THRESHOLD) {
-          // Chỉ lấy dữ liệu ngầm nếu đã rời đi quá 5 phút (Không chớp loading)
           if (session?.user?.id) fetchAppData(false); 
         }
         hiddenTime = null;
@@ -242,31 +236,11 @@ export default function Home() {
         },
 
         steps: [
-          { element: '#memory-btn', popover: { 
-            title: '<div class="vi-title">Góc Kỷ Niệm</div><div class="en-title">Memories</div>', 
-            description: '<div class="vi-desc">Nơi lưu giữ những bức ảnh dìm hàng của 2 đứa.</div><div class="en-desc">A place to keep our funniest photos.</div>', 
-            side: "top", align: 'center' 
-          } },
-          { element: '#question-btn', popover: { 
-            title: '<div class="vi-title">Câu Hỏi Hàng Daily</div><div class="en-title">Daily Prompts</div>', 
-            description: '<div class="vi-desc">Mỗi ngày 1 câu hỏi. Phải trả lời mới xem được đáp án của người kia!</div><div class="en-desc">Answer the daily question to see your partner\'s response!</div>', 
-            side: "top", align: 'center' 
-          } },
-          { element: '#bucket-btn', popover: { 
-            title: '<div class="vi-title">Ước Nguyện</div><div class="en-title">Bucket List</div>', 
-            description: '<div class="vi-desc">Viết ra những điều muốn làm chung cùng nhau.</div><div class="en-desc">Write down things we want to do together.</div>', 
-            side: "top", align: 'center' 
-          } },
-          { element: '#setting-btn', popover: { 
-            title: '<div class="vi-title">Cài Đặt</div><div class="en-title">Settings</div>', 
-            description: '<div class="vi-desc">Đổi màu nền và cài ngày bắt đầu của 2 bạn ở đây nè.</div><div class="en-desc">Change the background color and set the start date for both of you here.</div>', 
-            side: "top", align: 'center' 
-          } },
-          { element: '#unpair-btn', popover: { 
-            title: '<div class="vi-title">Huỷ Ghép</div><div class="en-title">Unpair</div>', 
-            description: '<div class="vi-desc">Hy vọng 2 bạn KHÔNG BAO GIỜ phải dùng đến nút này!</div><div class="en-desc">Hopefully, you will NEVER have to use this button!</div>', 
-            side: "top", align: 'end' 
-          } },
+          { element: '#memory-btn', popover: { title: '<div class="vi-title">Góc Kỷ Niệm</div><div class="en-title">Memories</div>', description: '<div class="vi-desc">Nơi lưu giữ những bức ảnh dìm hàng của 2 đứa.</div><div class="en-desc">A place to keep our funniest photos.</div>', side: "top", align: 'center' } },
+          { element: '#question-btn', popover: { title: '<div class="vi-title">Câu Hỏi Hàng Daily</div><div class="en-title">Daily Prompts</div>', description: '<div class="vi-desc">Mỗi ngày 1 câu hỏi. Phải trả lời mới xem được đáp án của người kia!</div><div class="en-desc">Answer the daily question to see your partner\'s response!</div>', side: "top", align: 'center' } },
+          { element: '#bucket-btn', popover: { title: '<div class="vi-title">Ước Nguyện</div><div class="en-title">Bucket List</div>', description: '<div class="vi-desc">Viết ra những điều muốn làm chung cùng nhau.</div><div class="en-desc">Write down things we want to do together.</div>', side: "top", align: 'center' } },
+          { element: '#setting-btn', popover: { title: '<div class="vi-title">Cài Đặt</div><div class="en-title">Settings</div>', description: '<div class="vi-desc">Đổi màu nền và cài ngày bắt đầu của 2 bạn ở đây nè.</div><div class="en-desc">Change the background color and set the start date for both of you here.</div>', side: "top", align: 'center' } },
+          { element: '#unpair-btn', popover: { title: '<div class="vi-title">Huỷ Ghép</div><div class="en-title">Unpair</div>', description: '<div class="vi-desc">Hy vọng 2 bạn KHÔNG BAO GIỜ phải dùng đến nút này!</div><div class="en-desc">Hopefully, you will NEVER have to use this button!</div>', side: "top", align: 'end' } },
         ],
         onDestroyStarted: async () => {
           localStorage.setItem(tutorialKey, 'true');
@@ -275,7 +249,6 @@ export default function Home() {
           driverObj.destroy();
         }
       });
-
       setTimeout(() => { driverObj.drive(); }, 1000); 
     }
   }, [isLoading, session, coupleData, myProfile]);
@@ -296,22 +269,21 @@ export default function Home() {
     }
   };
 
+  // ==========================================
+  // LOGIC ĐIỀU HƯỚNG MỚI (CHỈ GỌI MỖI INTRO)
+  // ==========================================
   if (!session) {
-    if (!hasStartedIntro) {
-      return (
-        <IntroScreen 
-        onStart={() => setShowAuth(true)} // Khi ấn nút, set showAuth = true
-        showAuth={showAuth}              // Truyền state để IntroScreen biết khi nào cần trượt
-        onBack={() => setShowAuth(false)} // Nút Back từ file Auth sẽ gọi cái này
+    return (
+      <IntroScreen 
+        showAuth={showAuth}
+        onStart={() => setShowAuth(true)}
+        onBack={() => setShowAuth(false)}
         locale={locale} 
         setLocale={handleLocaleChange}
         isDarkMode={isDarkMode}
         setIsDarkMode={setIsDarkMode}
       />
-      );
-    }
-
-    return <Auth onBack={() => setHasStartedIntro(false)} locale={locale} />;
+    );
   }
 
   if (isLoading) return <div className="flex min-h-screen items-center justify-center"><div className="animate-pulse w-10 h-10 bg-slate-200 rounded-full"></div></div>;
@@ -465,7 +437,7 @@ export default function Home() {
                     <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-20">
                       <div className="bg-slate-50 border border-slate-100 shadow-sm px-2.5 py-1 rounded-full text-base">{partnerMood}</div>
                     </div>
-                    <AvatarPlayer locale={locale} name={appData.partnerName} image={appData.partnerImage} zodiac={appData.partnerZodiac} age={getAge(appData.partnerDob)} />
+                    <AvatarPlayer locale={locale} name={appData.partnerName} image={appData.partnerDob ? appData.partnerImage : null} zodiac={appData.partnerZodiac} age={getAge(appData.partnerDob)} />
                   </div>
                 </div>
 
@@ -499,7 +471,7 @@ export default function Home() {
             <div className={`w-full lg:w-[60%] h-[650px] lg:h-full relative ${currentView === 'home' ? 'hidden lg:flex' : 'flex'}`}>
               {currentView === 'home' && (
                 <div className="w-full h-full flex flex-col items-center justify-center text-center p-6">
-                  <p className="font-bold tracking-widest uppercase text-[11px] text-slate-400">{t.dashboard.emptyState}</p>
+                  <p className="font-bold tracking-widest uppercase text-[11px] text-slate-400 leading-loose">{t.dashboard.emptyState}</p>
                 </div>
               )}
               {currentView === 'memories' && <MemoryTimeline locale={locale} onBack={() => setCurrentView('home')} coupleId={coupleData.id} currentUser={session.user} />}
@@ -510,7 +482,7 @@ export default function Home() {
         </>
       )}
 
-      <SettingsModal locale={locale} isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} currentData={appData} onSave={async (newData: any) => {
+      <SettingsModal locale={locale} isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} currentData={appData} onSave= {async (newData: any) => {
         setAppData({ ...appData, startDate: newData.startDate, theme: newData.theme });
         await supabase.from('couples').update({ start_date: newData.startDate, theme: newData.theme }).eq('id', coupleData.id);
       }} />
