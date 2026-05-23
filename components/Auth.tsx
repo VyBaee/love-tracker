@@ -124,9 +124,10 @@ export default function Auth({ onBack, locale }: AuthProps) {
   };
 
   return (
-    <div className="w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-2xl border border-white/20">
+    // 1. GIAO DIỆN FORM CHÍNH: Trắng kính mờ viền trắng y hệt khung Demo
+    <div className="w-full max-w-sm mx-auto bg-white/80 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-cute relative z-10 border border-white animate-fade-in">
       
-      {/* NÚT QUAY LẠI ẨN MÌNH TRONG KHUNG AUTH */}
+      {/* 2. NÚT QUAY LẠI: Nền xám nhạt tinh tế */}
       <button 
         onClick={onBack} 
         className="absolute top-6 left-6 w-10 h-10 rounded-full flex items-center justify-center bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-theme-500 transition-all shadow-sm"
@@ -139,16 +140,19 @@ export default function Auth({ onBack, locale }: AuthProps) {
           <span className="text-4xl animate-pulse inline-block">💖</span>
         </div>
         <h2 className="text-2xl font-bold text-theme-600 mb-1">Love Tracker</h2>
-        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">
+        <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
           {isVerifying ? t.verifyEmail : isForgotPassword || isResetting ? t.resetPassTitle : (isLogin ? t.login : t.register)}
         </p>
       </div>
 
+      {/* --- CÁC FORM TÙY TRẠNG THÁI --- */}
+
       {isVerifying ? (
         <form onSubmit={handleVerifyOtp} className="space-y-4 animate-fade-in">
-          <p className="text-sm text-center font-medium text-slate-600 mb-4">{t.otpSentTo} <br/><span className="font-bold text-theme-500">{email}</span></p>
+          <p className="text-sm text-center font-medium text-slate-500 mb-4">{t.otpSentTo} <br/><span className="font-bold text-theme-500">{email}</span></p>
           <div>
-            <input type="text" maxLength={6} value={otpCode} onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center text-2xl font-bold tracking-[1em] outline-none focus:border-theme-400 focus:ring-2 focus:ring-theme-100 transition-all shadow-inner" placeholder={t.placeholderOTP} required />
+            {/* 3. Ô INPUT: Nền xám nhạt, border mỏng y hệt ô nhập ID đối phương */}
+            <input type="text" maxLength={6} value={otpCode} onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center text-2xl font-bold tracking-[1em] outline-none focus:border-theme-400 focus:bg-white focus:ring-2 focus:ring-theme-100 transition-all shadow-inner text-slate-700" placeholder={t.placeholderOTP} required />
           </div>
           {errorMsg && <p className="text-red-500 text-xs font-bold text-center bg-red-50 p-2 rounded-xl">{errorMsg}</p>}
           {successMsg && <p className="text-theme-600 text-xs font-bold text-center bg-theme-50 p-2 rounded-xl">{successMsg}</p>}
@@ -157,25 +161,25 @@ export default function Auth({ onBack, locale }: AuthProps) {
         </form>
       ) : isForgotPassword ? (
         <form onSubmit={handleForgotPassword} className="space-y-4 animate-fade-in">
-          <p className="text-sm text-center font-medium text-slate-600 mb-4">{t.enterEmailToReset}</p>
+          <p className="text-sm text-center font-medium text-slate-500 mb-4">{t.enterEmailToReset}</p>
           <div>
             <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider px-1">{t.labelEmail}</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm outline-none focus:border-theme-400 transition-all" placeholder={t.placeholderEmail} required />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm outline-none focus:border-theme-400 focus:bg-white transition-all text-slate-700" placeholder={t.placeholderEmail} required />
           </div>
           {errorMsg && <p className="text-red-500 text-xs font-bold text-center bg-red-50 p-2 rounded-xl">{errorMsg}</p>}
           {successMsg && <p className="text-theme-600 text-xs font-bold text-center bg-theme-50 p-2 rounded-xl">{successMsg}</p>}
           <button type="submit" disabled={isLoading} className="w-full btn-cute py-4 text-sm mt-4 disabled:opacity-50">{isLoading ? t.btnProcessing : t.btnSendReset}</button>
-          <button type="button" onClick={() => { setIsForgotPassword(false); setErrorMsg(''); setSuccessMsg(''); }} className="w-full text-[11px] font-bold text-slate-500 hover:text-theme-500 mt-4 uppercase tracking-widest">{t.btnBack}</button>
+          <button type="button" onClick={() => { setIsForgotPassword(false); setErrorMsg(''); setSuccessMsg(''); }} className="w-full text-[11px] font-bold text-slate-400 hover:text-theme-500 mt-4 uppercase tracking-widest">{t.btnBack}</button>
         </form>
       ) : isResetting ? (
         <form onSubmit={handleUpdatePassword} className="space-y-4 animate-fade-in">
-          <p className="text-sm text-center font-medium text-slate-600 mb-4">{t.otpSentTo} <br/><span className="font-bold text-theme-500">{email}</span></p>
+          <p className="text-sm text-center font-medium text-slate-500 mb-4">{t.otpSentTo} <br/><span className="font-bold text-theme-500">{email}</span></p>
           <div>
-            <input type="text" maxLength={6} value={otpCode} onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center text-2xl font-bold tracking-[1em] outline-none focus:border-theme-400 focus:ring-2 focus:ring-theme-100 transition-all shadow-inner" placeholder={t.placeholderOTP} required />
+            <input type="text" maxLength={6} value={otpCode} onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center text-2xl font-bold tracking-[1em] outline-none focus:border-theme-400 focus:bg-white focus:ring-2 focus:ring-theme-100 transition-all shadow-inner text-slate-700" placeholder={t.placeholderOTP} required />
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider px-1">{t.labelNewPass}</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm outline-none focus:border-theme-400 transition-all" placeholder={t.placeholderPass} required />
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm outline-none focus:border-theme-400 focus:bg-white transition-all text-slate-700" placeholder={t.placeholderPass} required />
             {password.length > 0 && (
               <div className="mt-2 px-1">
                 <div className="flex gap-1 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
@@ -195,16 +199,16 @@ export default function Auth({ onBack, locale }: AuthProps) {
           {!isLogin && (
             <div>
               <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider px-1">{t.labelName}</label>
-              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm outline-none focus:border-theme-400 transition-all" placeholder={t.placeholderName} required={!isLogin} />
+              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm outline-none focus:border-theme-400 focus:bg-white transition-all text-slate-700" placeholder={t.placeholderName} required={!isLogin} />
             </div>
           )}
           <div>
             <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider px-1">{t.labelEmail}</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm outline-none focus:border-theme-400 transition-all" placeholder={t.placeholderEmail} required />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm outline-none focus:border-theme-400 focus:bg-white transition-all text-slate-700" placeholder={t.placeholderEmail} required />
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider px-1">{t.labelPass}</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm outline-none focus:border-theme-400 transition-all" placeholder={t.placeholderPass} required />
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm outline-none focus:border-theme-400 focus:bg-white transition-all text-slate-700" placeholder={t.placeholderPass} required />
             
             {isLogin && (
               <div className="text-right px-1 mt-1">
@@ -228,7 +232,7 @@ export default function Auth({ onBack, locale }: AuthProps) {
           {!isLogin && (
             <div>
               <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider px-1">{t.labelConfirmPass}</label>
-              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm outline-none focus:border-theme-400 transition-all" placeholder={t.placeholderPass} required={!isLogin} />
+              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm outline-none focus:border-theme-400 focus:bg-white transition-all text-slate-700" placeholder={t.placeholderPass} required={!isLogin} />
             </div>
           )}
           {errorMsg && <p className="text-red-500 text-xs font-bold text-center bg-red-50 p-2 rounded-xl">{errorMsg}</p>}
@@ -240,7 +244,7 @@ export default function Auth({ onBack, locale }: AuthProps) {
 
       {!isVerifying && !isForgotPassword && !isResetting && (
         <div className="mt-6 text-center">
-          <button onClick={() => { setIsLogin(!isLogin); setErrorMsg(''); setPassword(''); setConfirmPassword(''); }} className="text-[11px] font-bold text-slate-500 hover:text-theme-500 transition-colors uppercase tracking-widest">
+          <button onClick={() => { setIsLogin(!isLogin); setErrorMsg(''); setPassword(''); setConfirmPassword(''); }} className="text-[11px] font-bold text-slate-400 hover:text-theme-500 transition-colors uppercase tracking-widest">
             {isLogin ? t.switchRegister : t.switchLogin}
           </button>
         </div>
