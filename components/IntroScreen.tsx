@@ -17,8 +17,18 @@ interface IntroScreenProps {
 
 export default function IntroScreen({ showAuth, onStart, onBack, locale, setLocale, isDarkMode, setIsDarkMode }: IntroScreenProps) {
   const t = translations[locale].introScreen;
-  const authExtra = translations[locale].authExtra;
 
+  // Lấy dữ liệu i18n mới thêm (Kèm fallback an toàn để web không bao giờ lỗi)
+  const authExtra = translations[locale].authExtra || {
+    ticker: locale === 'vi' ? '✨ Hơn 50,000+ cặp đôi đã tìm thấy không gian hạnh phúc riêng...' : '✨ Over 50,000+ couples connected globally...',
+    feature1: locale === 'vi' ? '🔒 Mã hóa đầu cuối' : '🔒 End-to-End Encrypted',
+    feature1Desc: locale === 'vi' ? 'Nhật ký và ảnh của hai bạn được bảo mật tuyệt đối.' : 'Your memories and letters are fully secured.',
+    feature2: locale === 'vi' ? '⚡ Đồng bộ Realtime' : '⚡ Realtime Sync',
+    feature2Desc: locale === 'vi' ? 'Nhận lời mời và cảm xúc của người ấy ngay lập tức.' : 'See updates and mood shifts instantly.',
+    feature3: locale === 'vi' ? '🤖 Gợi ý câu hỏi AI' : '🤖 AI Daily Prompts',
+    feature3Desc: locale === 'vi' ? 'Mỗi ngày một câu hỏi hâm nóng tình cảm tự động.' : 'Fresh interactive questions generated every day.',
+    quote: locale === 'vi' ? '“Tình yêu không phải là nhìn nhau, mà là cùng nhau nhìn về một hướng.”' : '“Love does not consist in gazing at each other, but in looking outward together in the same direction.”'
+  };
 
   // =========================================================================
   // LOGIC VÒNG LẶP VÔ TẬN (INFINITE VERTICAL SLIDER)
@@ -60,8 +70,10 @@ export default function IntroScreen({ showAuth, onStart, onBack, locale, setLoca
   const renderIntroPanel = (key: string) => (
     <div key={key} className="h-1/3 w-full flex flex-col lg:flex-row relative flex-shrink-0">
       
-      {/* NỬA TRÁI: TEXT */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center lg:items-start justify-center p-6 lg:px-12 z-10 ml-0 lg:ml-40">
+      {/* CỘT VĂN BẢN (TRÁI) */}
+      {/* ĐÃ FIX: Thêm h-full để đẩy Text ra chính giữa màn hình Mobile */}
+      {/* SỬA UI: Tăng padding ngang trên cả điện thoại (px-10) và laptop/pc (lg:px-16) để hiển thị đẹp hơn */}
+      <div className={`h-full flex-1 flex flex-col items-center lg:items-start justify-center py-6 px-10 lg:px-40 z-10 transition-all duration-700 ${showAuth ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         {/* <div className={`inline-block px-4 py-1.5 rounded-full border text-xs font-bold tracking-widest uppercase mb-6 backdrop-blur-md ${isDarkMode ? 'bg-pink-900/30 border-pink-800 text-pink-400' : 'bg-theme-100/50 border-theme-200 text-theme-600'}`}>
           {t.versionTag}
         </div> */}
@@ -83,7 +95,7 @@ export default function IntroScreen({ showAuth, onStart, onBack, locale, setLoca
             {t.startBtn}
           </button>
           <button
-            onClick={() => window.open('https://github.com', '_blank')}
+            onClick={() => window.open('https://github.com/VyBaee/love-tracker', '_blank')}
             className={`px-8 py-4 rounded-full font-bold text-sm shadow-sm border transition-all active:scale-95 flex items-center justify-center gap-2 ${isDarkMode ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700' : 'bg-white text-theme-600 border-theme-100 hover:bg-theme-50'}`}
           >
             <svg className="w-5 h-5 text-theme-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.418 22 12c0-5.523-4.477-10-10-10z"></path></svg>
@@ -92,8 +104,8 @@ export default function IntroScreen({ showAuth, onStart, onBack, locale, setLoca
         </div>
       </div>
 
-      {/* NỬA PHẢI: MOCKUP UI */}
-      <div className="hidden lg:flex w-full lg:w-1/2 flex-col items-center justify-center p-6 lg:px-12 relative z-10 mr-0 lg:mr-20">
+      {/* CỘT MOCKUP UI */}
+      <div className="hidden lg:flex w-full lg:w-1/2 flex-col items-center justify-center p-6 lg:px-12 relative z-10">
         <div className={`relative w-full max-w-md backdrop-blur-2xl border p-6 rounded-[2.5rem] shadow-2xl z-10 rotate-[-2deg] hover:rotate-0 transition-transform duration-500 ${isDarkMode ? 'bg-slate-900/40 border-slate-700/50 shadow-pink-900/10' : 'bg-white/60 border-white shadow-theme-900/10'}`}>
           <div className={`flex justify-between items-center mb-8 border-b pb-4 ${isDarkMode ? 'border-slate-800' : 'border-theme-50'}`}>
             <div className="flex items-center gap-3">
@@ -120,7 +132,7 @@ export default function IntroScreen({ showAuth, onStart, onBack, locale, setLoca
               <div className="w-10 h-10 bg-theme-100 text-theme-500 rounded-full flex items-center justify-center text-lg">📸</div>
               <div>
                 <div className={`text-xs font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{t.newMemory}</div>
-                <div className="text-[10px] text-slate-500">{t.justUploaded}</div>
+                <div className="text-[10px] text-slate-500">Vừa tải lên</div>
               </div>
             </div>
           </div>
@@ -137,9 +149,9 @@ export default function IntroScreen({ showAuth, onStart, onBack, locale, setLoca
       
       {/* NỬA TRÁI: Tính năng nổi bật (Chỉ hiện trên PC) */}
       <div className="hidden lg:flex w-full lg:w-1/2 flex-col justify-center p-6 lg:px-12 pr-12 z-10 max-w-2xl mx-auto">
-        <p className="text-xs font-black text-theme-500 uppercase tracking-widest mb-2">{authExtra.premium}</p>
+        <p className="text-xs font-black text-theme-500 uppercase tracking-widest mb-2">Premium Security & Experience</p>
         <h2 className={`text-3xl font-black mb-8 leading-snug ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-          {authExtra.title}
+          Không gian số lưu trữ <br />trọn vẹn hồi ức của hai người.
         </h2>
         
         <div className="space-y-6">
@@ -196,11 +208,11 @@ export default function IntroScreen({ showAuth, onStart, onBack, locale, setLoca
       </div>
 
       {/* Dòng Ticker chạy ngang đáy màn hình */}
-      {/* <div className={`absolute bottom-0 left-0 w-full py-3 border-t overflow-hidden whitespace-nowrap hidden lg:block ${isDarkMode ? 'bg-slate-950/80 border-slate-900' : 'bg-white/40 border-theme-50'}`}>
+      <div className={`absolute bottom-0 left-0 w-full py-3 border-t overflow-hidden whitespace-nowrap hidden lg:block ${isDarkMode ? 'bg-slate-950/80 border-slate-900' : 'bg-white/40 border-theme-50'}`}>
         <div className="inline-block animate-pulse text-[11px] font-bold tracking-wider text-slate-400/80 px-12">
           {authExtra.ticker} &nbsp;&nbsp;&nbsp;&nbsp; {authExtra.ticker} &nbsp;&nbsp;&nbsp;&nbsp; {authExtra.ticker}
         </div>
-      </div> */}
+      </div>
     </div>
   );
 
