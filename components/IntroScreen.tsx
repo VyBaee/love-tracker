@@ -208,11 +208,11 @@ export default function IntroScreen({ showAuth, onStart, onBack, locale, setLoca
       </div>
 
       {/* Dòng Ticker chạy ngang đáy màn hình */}
-      <div className={`absolute bottom-0 left-0 w-full py-3 border-t overflow-hidden whitespace-nowrap hidden lg:block ${isDarkMode ? 'bg-slate-950/80 border-slate-900' : 'bg-white/40 border-theme-50'}`}>
+      {/* <div className={`absolute bottom-0 left-0 w-full py-3 border-t overflow-hidden whitespace-nowrap hidden lg:block ${isDarkMode ? 'bg-slate-950/80 border-slate-900' : 'bg-white/40 border-theme-50'}`}>
         <div className="inline-block animate-pulse text-[11px] font-bold tracking-wider text-slate-400/80 px-12">
           {authExtra.ticker} &nbsp;&nbsp;&nbsp;&nbsp; {authExtra.ticker} &nbsp;&nbsp;&nbsp;&nbsp; {authExtra.ticker}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 
