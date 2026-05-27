@@ -26,8 +26,11 @@ const getAge = (dob: string) => {
 };
 
 export default function Home() {
+  // Cờ báo hiệu trang đã tải xong Client-side để tránh nháy màu (Hydration Flicker)
+  const [isMounted, setIsMounted] = useState(false);
+
   const [session, setSession] = useState<Session | null>(null);
-  const [showAuth, setShowAuth] = useState(false); // CHỈ DÙNG STATE NÀY ĐỂ ĐIỀU KHIỂN TRƯỢT DỌC
+  const [showAuth, setShowAuth] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const [myProfile, setMyProfile] = useState<any>(null);
@@ -55,17 +58,39 @@ export default function Home() {
   const moods = ['🥰', '😊', '😢', '😠', '😴', '🤒'];
 
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [locale, setLocale] = useState<Locale>('vi');
 
-  const [locale, setLocale] = useState<Locale>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('user_locale') as Locale) || 'vi';
+  // =====================================================================
+  // 1. ĐỒNG BỘ LOCALSTORAGE NGAY KHI VỪA MỞ WEB (TRÁNH RENDER MẶC ĐỊNH)
+  // =====================================================================
+  useEffect(() => {
+    // 1.1 Load Ngôn Ngữ
+    const savedLocale = (localStorage.getItem('user_locale') as Locale) || 'vi';
+    setLocale(savedLocale);
+
+    // 1.2 Load Chế độ Sáng/Tối
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
+    } else {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove('dark');
     }
-    return 'vi';
-  });
+
+    // 1.3 Load Màu chủ đạo (Nền)
+    const savedColor = localStorage.getItem('custom_theme_color');
+    if (savedColor) {
+      setAppData((prev: any) => ({ ...prev, theme: savedColor }));
+    }
+
+    // Đánh dấu đã Load xong để cho phép render UI
+    setIsMounted(true);
+  }, []);
 
   const handleLocaleChange = (newLocale: Locale) => {
     setLocale(newLocale);
-    localStorage.setItem('user_locale', newLocale);
+    localStorage.setItem('user_locale', newLocale); // Lưu ngay khi người dùng chọn
   };
 
   const t = translations[locale];
@@ -74,9 +99,7 @@ export default function Home() {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
-      if (event === 'SIGNED_OUT') {
-        setShowAuth(false); // Khi đăng xuất thì đóng panel trượt dọc lại
-      }
+      if (event === 'SIGNED_OUT') setShowAuth(false);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -100,7 +123,7 @@ export default function Home() {
       const { data: newProfile } = await supabase.from('profiles').insert([{ id: user.id, email: user.email, display_name: registeredName, uid: randomUid }]).select().single();
       profile = newProfile;
     }
-
+    
     if (profile && !profile.uid) {
       const randomUid = Math.floor(10000000 + Math.random() * 90000000).toString();
       const { data: updatedProfile } = await supabase.from('profiles').update({ uid: randomUid }).eq('id', user.id).select().single();
@@ -122,34 +145,40 @@ export default function Home() {
       setMyMood(me?.current_mood || '🥰');
       setPartnerMood(partner?.current_mood || '😴');
 
+      // Lấy màu từ Database và lưu lại vào máy để lần sau load cho nhanh
+      const fetchedTheme = couples[0].theme || '#ec4899';
+      localStorage.setItem('custom_theme_color', fetchedTheme);
+
       setAppData({
-        startDate: couples[0].start_date, theme: couples[0].theme || '#ec4899',
+        startDate: couples[0].start_date, theme: fetchedTheme,
         myName: me?.display_name, myDob: me?.dob, myImage: me?.avatar_url, myZodiac: me?.zodiac,
         partnerName: partner?.display_name, partnerDob: partner?.dob, partnerImage: partner?.avatar_url, partnerZodiac: partner?.zodiac,
       });
+      
       if (couples[0].unpair_request_by && couples[0].unpair_request_by !== user.id) setShowUnpairPopup(true);
     } else {
       setCoupleData(null);
-      setAppData({ startDate: '', theme: '#ec4899', myName: profile?.display_name || '' });
+      // Giữ nguyên màu nền đã load từ localStorage
+      setAppData((prev: any) => ({ ...prev, startDate: '', myName: profile?.display_name || '' }));
       setShowUnpairPopup(false);
     }
     if (showLoadingScreen) setIsLoading(false);
   };
 
-  useEffect(() => {
-    if (session?.user?.id) fetchAppData(true);
+  useEffect(() => { 
+    if (session?.user?.id) fetchAppData(true); 
   }, [session?.user?.id]);
 
   useEffect(() => {
     let hiddenTime: number | null = null;
-    const REFRESH_THRESHOLD = 5 * 60 * 1000;
+    const REFRESH_THRESHOLD = 5 * 60 * 1000; 
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
         hiddenTime = Date.now();
       } else {
         if (hiddenTime && Date.now() - hiddenTime > REFRESH_THRESHOLD) {
-          if (session?.user?.id) fetchAppData(false);
+          if (session?.user?.id) fetchAppData(false); 
         }
         hiddenTime = null;
       }
@@ -158,7 +187,6 @@ export default function Home() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [session?.user?.id]);
-
 
   const confirmRequestUnpair = async () => {
     setUnpairLoading(true);
@@ -221,7 +249,7 @@ export default function Home() {
         nextBtnText: 'Tiếp ➔<br><span class="en-btn">Next</span>',
         prevBtnText: '⬅ Lùi<br><span class="en-btn">Back</span>',
         doneBtnText: 'Bắt đầu!<br><span class="en-btn">Let\'s go!</span>',
-
+        
         onHighlightStarted: (element) => {
           if (!element) return;
           if (element.id === 'unpair-btn') return;
@@ -237,7 +265,7 @@ export default function Home() {
 
         steps: [
           { element: '#memory-btn', popover: { title: '<div class="vi-title">Góc Kỷ Niệm</div><div class="en-title">Memories</div>', description: '<div class="vi-desc">Nơi lưu giữ những bức ảnh dìm hàng của 2 đứa.</div><div class="en-desc">A place to keep our funniest photos.</div>', side: "top", align: 'center' } },
-          { element: '#question-btn', popover: { title: '<div class="vi-title">Câu Hỏi Hàng Daily</div><div class="en-title">Daily Prompts</div>', description: '<div class="vi-desc">Mỗi ngày 1 câu hỏi. Phải trả lời mới xem được đáp án của người kia!</div><div class="en-desc">Answer the daily question to see your partner\'s response!</div>', side: "top", align: 'center' } },
+          { element: '#question-btn', popover: { title: '<div class="vi-title">Câu Hỏi Hàng Daily</div><div class="en-title">Daily Prompts</div>', description: `<div class="vi-desc">Mỗi ngày 1 câu hỏi. Phải trả lời mới xem được đáp án của người kia!</div><div class="en-desc">Answer the daily question to see your partner's response!</div>`, side: "top", align: 'center' } },
           { element: '#bucket-btn', popover: { title: '<div class="vi-title">Ước Nguyện</div><div class="en-title">Bucket List</div>', description: '<div class="vi-desc">Viết ra những điều muốn làm chung cùng nhau.</div><div class="en-desc">Write down things we want to do together.</div>', side: "top", align: 'center' } },
           { element: '#setting-btn', popover: { title: '<div class="vi-title">Cài Đặt</div><div class="en-title">Settings</div>', description: '<div class="vi-desc">Đổi màu nền và cài ngày bắt đầu của 2 bạn ở đây nè.</div><div class="en-desc">Change the background color and set the start date for both of you here.</div>', side: "top", align: 'center' } },
           { element: '#unpair-btn', popover: { title: '<div class="vi-title">Huỷ Ghép</div><div class="en-title">Unpair</div>', description: '<div class="vi-desc">Hy vọng 2 bạn KHÔNG BAO GIỜ phải dùng đến nút này!</div><div class="en-desc">Hopefully, you will NEVER have to use this button!</div>', side: "top", align: 'end' } },
@@ -249,17 +277,9 @@ export default function Home() {
           driverObj.destroy();
         }
       });
-      setTimeout(() => { driverObj.drive(); }, 1000);
+      setTimeout(() => { driverObj.drive(); }, 1000); 
     }
   }, [isLoading, session, coupleData, myProfile]);
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-      setIsDarkMode(true);
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
 
   const handleMoodChange = async (m: string) => {
     setMyMood(m);
@@ -269,16 +289,16 @@ export default function Home() {
     }
   };
 
-  // ==========================================
-  // LOGIC ĐIỀU HƯỚNG MỚI (CHỈ GỌI MỖI INTRO)
-  // ==========================================
+  // CHỈ RENDER UI KHI ĐÃ ĐỌC XONG BỘ NHỚ LOCAL (Chống nháy giao diện)
+  if (!isMounted) return null;
+
   if (!session) {
     return (
-      <IntroScreen
+      <IntroScreen 
         showAuth={showAuth}
         onStart={() => setShowAuth(true)}
         onBack={() => setShowAuth(false)}
-        locale={locale}
+        locale={locale} 
         setLocale={handleLocaleChange}
         isDarkMode={isDarkMode}
         setIsDarkMode={setIsDarkMode}
@@ -377,7 +397,7 @@ export default function Home() {
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <p className="text-[11px] text-slate-400 truncate">ID: {myProfile?.uid || '------'}</p>
                       {myProfile?.uid && (
-                        <button
+                        <button 
                           onClick={(e) => {
                             e.stopPropagation();
                             navigator.clipboard.writeText(myProfile.uid);
@@ -390,8 +410,8 @@ export default function Home() {
                     </div>
                   </div>
                   <button onClick={() => { setShowProfileModal(true); setShowProfileMenu(false); }} className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 hover:bg-theme-50 transition-colors">{t.profile.edit}</button>
-
-                  <button
+                  
+                  <button 
                     onClick={() => {
                       const newMode = !isDarkMode;
                       setIsDarkMode(newMode);
@@ -482,8 +502,10 @@ export default function Home() {
         </>
       )}
 
-      <SettingsModal locale={locale} isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} currentData={appData} onSave={async (newData: any) => {
+      <SettingsModal locale={locale} isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} currentData={appData} onSave= {async (newData: any) => {
         setAppData({ ...appData, startDate: newData.startDate, theme: newData.theme });
+        // LƯU NGAY MÀU CHỦ ĐẠO MỚI VÀO BỘ NHỚ TRÌNH DUYỆT ĐỂ LẦN SAU KHÔNG BỊ TRẢ VỀ HỒNG MẶC ĐỊNH
+        localStorage.setItem('custom_theme_color', newData.theme); 
         await supabase.from('couples').update({ start_date: newData.startDate, theme: newData.theme }).eq('id', coupleData.id);
       }} />
 

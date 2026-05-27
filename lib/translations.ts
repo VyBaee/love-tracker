@@ -12,7 +12,8 @@ export const translations = {
     bucketList: { title: "Danh sách ước nguyện", progress: "Tiến độ thực hiện", placeholder: "Hai đứa mình sẽ cùng làm gì tiếp theo?", loading: "Đang tải..." },
     dailyPrompt: {
       title: "Câu hỏi hôm nay", aiThinking: 'Đang nhờ AI suy nghĩ câu hỏi...', partnerAnswered: "Câu trả lời của {name}", partnerNotAnswered: "Người ấy chưa trả lời câu hỏi hôm nay...",
-      hiddenAnswer: "Nội dung đã bị ẩn đi một cách đầy bí ẩn... Người ấy đang chờ bạn đó!", replyToSee: "Trả lời để xem", yourAnswer: "Câu trả lời của bạn", placeholder: "Nhập suy nghĩ của bạn vào đây...", btnSubmitting: "Đang gửi...", btnSubmit: "Gửi câu trả lời"
+      hiddenAnswer: "Nội dung đã bị ẩn đi một cách đầy bí ẩn... Người ấy đang chờ bạn đó!", replyToSee: "Trả lời để xem", yourAnswer: "Câu trả lời của bạn", placeholder: "Nhập suy nghĩ của bạn vào đây...", btnSubmitting: "Đang gửi...", btnSubmit: "Gửi câu trả lời",
+      btnCancelUpdate: "Hủy", btnSaveUpdate: "Lưu", btnSavingUpdate: "Đang lưu..."
     },
     memoryTimeline: {
       title: "Kỷ niệm", loading: "Đang tải...", empty: "Chưa có kỷ niệm nào.", loadMore: "Tải thêm", addEditTitle: "Thêm kỷ niệm mới", editTitle: "Cập nhật kỷ niệm",
@@ -72,7 +73,8 @@ export const translations = {
     bucketList: { title: "Bucket List", progress: "Progress", placeholder: "What will we do next?", loading: "Loading..." },
     dailyPrompt: {
       title: "Today's Prompt", aiThinking: "Asking AI for a question...", partnerAnswered: "{name}'s answer", partnerNotAnswered: "Your partner hasn't answered today's prompt yet...",
-      hiddenAnswer: "The content is mysteriously hidden... Your partner is waiting for you!", replyToSee: "Reply to see", yourAnswer: "Your Answer", placeholder: "Type your thoughts here...", btnSubmitting: "Sending...", btnSubmit: "Submit answer"
+      hiddenAnswer: "The content is mysteriously hidden... Your partner is waiting for you!", replyToSee: "Reply to see", yourAnswer: "Your Answer", placeholder: "Type your thoughts here...", btnSubmitting: "Sending...", btnSubmit: "Submit answer",
+      btnCancelUpdate: "Cancel", btnSaveUpdate: "Save", btnSavingUpdate: "Saving..."
     },
     memoryTimeline: {
       title: "Memories", loading: "Loading...", empty: "No memories yet.", loadMore: "Load more", addEditTitle: "Add new memory", editTitle: "Update memory",
