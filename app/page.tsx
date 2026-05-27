@@ -100,7 +100,7 @@ export default function Home() {
       const { data: newProfile } = await supabase.from('profiles').insert([{ id: user.id, email: user.email, display_name: registeredName, uid: randomUid }]).select().single();
       profile = newProfile;
     }
-    
+
     if (profile && !profile.uid) {
       const randomUid = Math.floor(10000000 + Math.random() * 90000000).toString();
       const { data: updatedProfile } = await supabase.from('profiles').update({ uid: randomUid }).eq('id', user.id).select().single();
@@ -136,20 +136,20 @@ export default function Home() {
     if (showLoadingScreen) setIsLoading(false);
   };
 
-  useEffect(() => { 
-    if (session?.user?.id) fetchAppData(true); 
+  useEffect(() => {
+    if (session?.user?.id) fetchAppData(true);
   }, [session?.user?.id]);
 
   useEffect(() => {
     let hiddenTime: number | null = null;
-    const REFRESH_THRESHOLD = 5 * 60 * 1000; 
+    const REFRESH_THRESHOLD = 5 * 60 * 1000;
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
         hiddenTime = Date.now();
       } else {
         if (hiddenTime && Date.now() - hiddenTime > REFRESH_THRESHOLD) {
-          if (session?.user?.id) fetchAppData(false); 
+          if (session?.user?.id) fetchAppData(false);
         }
         hiddenTime = null;
       }
@@ -221,7 +221,7 @@ export default function Home() {
         nextBtnText: 'Tiếp ➔<br><span class="en-btn">Next</span>',
         prevBtnText: '⬅ Lùi<br><span class="en-btn">Back</span>',
         doneBtnText: 'Bắt đầu!<br><span class="en-btn">Let\'s go!</span>',
-        
+
         onHighlightStarted: (element) => {
           if (!element) return;
           if (element.id === 'unpair-btn') return;
@@ -249,7 +249,7 @@ export default function Home() {
           driverObj.destroy();
         }
       });
-      setTimeout(() => { driverObj.drive(); }, 1000); 
+      setTimeout(() => { driverObj.drive(); }, 1000);
     }
   }, [isLoading, session, coupleData, myProfile]);
 
@@ -274,11 +274,11 @@ export default function Home() {
   // ==========================================
   if (!session) {
     return (
-      <IntroScreen 
+      <IntroScreen
         showAuth={showAuth}
         onStart={() => setShowAuth(true)}
         onBack={() => setShowAuth(false)}
-        locale={locale} 
+        locale={locale}
         setLocale={handleLocaleChange}
         isDarkMode={isDarkMode}
         setIsDarkMode={setIsDarkMode}
@@ -295,8 +295,8 @@ export default function Home() {
       style={{ '--theme-primary': appData.theme || '#ec4899', backgroundColor: `${appData.theme || '#ec4899'}0A` } as any}
       className="flex min-h-screen flex-col items-center justify-center p-4 relative overflow-hidden transition-colors duration-500 font-sans"
     >
-      <div style={{ backgroundColor: appData.theme || '#ec4899' }} className="absolute top-[-10%] left-[-10%] w-96 h-96 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob"></div>
-      <div style={{ backgroundColor: appData.theme || '#ec4899' }} className="absolute bottom-[-10%] right-[-10%] w-96 h-96 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-2000"></div>
+      <div style={{ backgroundColor: appData.theme || '#ec4899' }} className="pointer-events-none absolute top-[-10%] left-[-10%] w-96 h-96 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob"></div>
+      <div style={{ backgroundColor: appData.theme || '#ec4899' }} className="pointer-events-none absolute bottom-[-10%] right-[-10%] w-96 h-96 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-2000"></div>
 
       <FloatingHearts />
 
@@ -377,7 +377,7 @@ export default function Home() {
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <p className="text-[11px] text-slate-400 truncate">ID: {myProfile?.uid || '------'}</p>
                       {myProfile?.uid && (
-                        <button 
+                        <button
                           onClick={(e) => {
                             e.stopPropagation();
                             navigator.clipboard.writeText(myProfile.uid);
@@ -390,8 +390,8 @@ export default function Home() {
                     </div>
                   </div>
                   <button onClick={() => { setShowProfileModal(true); setShowProfileMenu(false); }} className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 hover:bg-theme-50 transition-colors">{t.profile.edit}</button>
-                  
-                  <button 
+
+                  <button
                     onClick={() => {
                       const newMode = !isDarkMode;
                       setIsDarkMode(newMode);
@@ -482,7 +482,7 @@ export default function Home() {
         </>
       )}
 
-      <SettingsModal locale={locale} isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} currentData={appData} onSave= {async (newData: any) => {
+      <SettingsModal locale={locale} isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} currentData={appData} onSave={async (newData: any) => {
         setAppData({ ...appData, startDate: newData.startDate, theme: newData.theme });
         await supabase.from('couples').update({ start_date: newData.startDate, theme: newData.theme }).eq('id', coupleData.id);
       }} />

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { translations, Locale } from '../lib/translations';
 
-// Ép chuẩn múi giờ Việt Nam (Tránh việc 1h sáng nhắn tin mà máy tính tưởng là hôm qua)
 const getVNTodayString = () => {
   const d = new Date();
   const vnTime = new Date(d.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
@@ -21,6 +20,11 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
   const t = translations[locale].dailyPrompt;
   const todayString = getVNTodayString();
   const [todayQuestion, setTodayQuestion] = useState("Đang tải dữ liệu...");
+
+  // State cho Edit UI
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     fetchDailyData();
@@ -39,7 +43,6 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
   }, [coupleId]);
 
   const fetchDailyData = async () => {
-    // 1. Tìm xem DB hôm nay đã có câu hỏi chưa
     const { data: qDataArr } = await supabase
       .from('daily_questions')
       .select('*')
@@ -50,17 +53,12 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
 
     let qData = qDataArr && qDataArr.length > 0 ? qDataArr[0] : null;
 
-    // 2. Nếu CHƯA CÓ, nhờ AI suy nghĩ
     if (!qData) {
       setTodayQuestion(t.aiThinking);
       try {
         const res = await fetch('/api/question');
         const aiData = await res.json();
-
-        // NẾU API BÁO LỖI -> QUĂNG LỖI RA LIỀN
-        if (!res.ok) {
-          throw new Error(aiData.error || "Không kết nối được với API");
-        }
+        if (!res.ok) throw new Error(aiData.error || "Không kết nối được với API");
 
         const aiQuestion = aiData.question;
 
@@ -70,41 +68,30 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
           couple_id: coupleId
         }]).select().single();
 
-        // =============== BẮT ĐẦU ĐOẠN SỬA LỖI ===============
         if (dbError) {
-          // Mã 23505 là lỗi "Duplicate key" (Trùng lặp dữ liệu do React chạy 2 lần)
           if (dbError.code === '23505') {
-            console.log("🔄 Phát hiện luồng chạy song song, tự động lấy câu hỏi đã lưu...");
             const { data: existingData } = await supabase
               .from('daily_questions')
               .select('*')
               .eq('for_date', todayString)
               .eq('couple_id', coupleId)
               .single();
-
             qData = existingData;
             setTodayQuestion(existingData.question);
           } else {
-            // Lỗi database thực sự thì báo lỗi đỏ
             throw new Error(`Lỗi lưu Database: ${dbError.message}`);
           }
         } else {
-          // Lưu thành công bình thường
           qData = newQData;
           setTodayQuestion(aiQuestion);
         }
-        // =============== KẾT THÚC ĐOẠN SỬA LỖI ===============
-
       } catch (err: any) {
-        // HIỂN THỊ THẲNG LỖI LÊN MÀN HÌNH ĐỂ DEV BIẾT ĐƯỜNG FIX
-        console.error("Bug Frontend nhận được:", err);
         setTodayQuestion(`🚨 [Lỗi AI]: ${err.message}`);
       }
     } else {
       setTodayQuestion(qData.question);
     }
 
-    // 3. Hiển thị đáp án nếu có
     if (qData) {
       let mine = null;
       let partners = null;
@@ -141,7 +128,6 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
 
     if (qData) {
       let updateData: any = {};
-
       if (qData.user1_id === currentUser.id) {
         updateData = { user1_answer: myAnswer.trim() };
       } else if (qData.user2_id === currentUser.id) {
@@ -153,12 +139,45 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
       }
 
       const { error } = await supabase.from('daily_questions').update(updateData).eq('id', qData.id);
-
       if (error) alert(`Lỗi Update: ${error.message}`);
       else setIsSubmitted(true);
     }
 
     setIsSubmitting(false);
+  };
+
+  const handleUpdateAnswer = async () => {
+    if (!editContent.trim() || !currentUser?.id) return;
+    setIsUpdating(true);
+
+    const { data: qDataArr } = await supabase
+      .from('daily_questions')
+      .select('*')
+      .eq('for_date', todayString)
+      .eq('couple_id', coupleId)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    const qData = qDataArr && qDataArr.length > 0 ? qDataArr[0] : null;
+
+    if (qData) {
+      let updateData: any = {};
+      if (qData.user1_id === currentUser.id) {
+        updateData = { user1_answer: editContent.trim() };
+      } else if (qData.user2_id === currentUser.id) {
+        updateData = { user2_answer: editContent.trim() };
+      }
+
+      const { error } = await supabase.from('daily_questions').update(updateData).eq('id', qData.id);
+
+      if (!error) {
+        setIsEditing(false);
+        setMyAnswer(editContent.trim());
+      } else {
+        alert(`Lỗi Update: ${error.message}`);
+      }
+    }
+    setIsUpdating(false);
   };
 
   return (
@@ -179,6 +198,7 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
           <p className="font-bold text-slate-700 text-base md:text-lg leading-relaxed">{todayQuestion}</p>
         </div>
 
+        {/* PARTNER ANSWER */}
         <div className="bg-white border border-slate-100 p-4 md:p-5 rounded-3xl shadow-sm">
           <p className="text-[11px] font-bold text-slate-400 mb-3 uppercase tracking-widest flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-slate-300"></span>
@@ -190,29 +210,68 @@ export default function DailyPrompt({ onBack, coupleId, currentUser, partnerName
           ) : isSubmitted ? (
             <p className="text-sm text-theme-600 font-medium bg-theme-50 p-4 rounded-2xl leading-relaxed animate-fade-in">{partnerAnswerText}</p>
           ) : (
-            <div className="relative">
-              <p className="text-sm text-slate-400 bg-slate-50 p-4 rounded-2xl filter blur-[5px] select-none">{t.hiddenAnswer}</p>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="bg-white/90 backdrop-blur-sm text-xs font-bold text-slate-600 px-4 py-2 rounded-full shadow-sm flex items-center gap-2">
-                  <svg className="w-4 h-4 text-theme-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                  {t.replyToSee}
-                </span>
-              </div>
-            </div>
+            <p className="text-sm text-slate-400 bg-slate-50 p-4 rounded-2xl italic">
+              Hãy trả lời câu hỏi để xem đáp án của {partnerName || 'người ấy'} nhé!
+            </p>
           )}
         </div>
 
+        {/* MY ANSWER */}
         <div className="bg-white border border-theme-100 p-4 md:p-5 rounded-3xl shadow-sm">
           <p className="text-[11px] font-bold text-theme-400 mb-3 uppercase tracking-widest flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-theme-400"></span>
             {t.yourAnswer}
           </p>
           {isSubmitted ? (
-            <p className="text-sm text-slate-700 font-medium bg-slate-50 p-4 rounded-2xl leading-relaxed">{myAnswer}</p>
+            <div className="relative">
+              {isEditing ? (
+                <div className="space-y-3 animate-fade-in">
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="w-full p-4 rounded-2xl border border-slate-200 text-sm outline-none focus:ring-2 transition-all resize-none min-h-[100px] bg-white text-slate-700 focus:ring-theme-200 shadow-inner custom-scrollbar"
+                    placeholder="Nhập câu trả lời của bạn..."
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => setIsEditing(false)}
+                      className="px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-500 hover:bg-slate-200"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      onClick={handleUpdateAnswer}
+                      disabled={isUpdating}
+                      className="btn-cute px-6 py-2 rounded-xl text-xs font-bold shadow-sm disabled:opacity-50"
+                    >
+                      {isUpdating ? 'Đang lưu...' : 'Lưu thay đổi'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative">
+                  <p className="text-sm text-slate-700 font-medium bg-slate-50 p-4 rounded-2xl leading-relaxed pr-12 border border-slate-100">
+                    {myAnswer}
+                  </p>
+                  
+                  {/* ĐÃ FIX: NÚT SỬA LUÔN HIỂN THỊ */}
+                  <button
+                    onClick={() => {
+                      setEditContent(myAnswer);
+                      setIsEditing(true);
+                    }}
+                    className="absolute top-2 right-2 p-2 rounded-lg bg-black/5 text-slate-400 hover:text-theme-500 transition-colors"
+                    title="Chỉnh sửa"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="space-y-4">
               <textarea
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm outline-none focus:border-theme-400 transition-all resize-none custom-scrollbar shadow-inner"
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm outline-none focus:border-theme-400 transition-all resize-none custom-scrollbar shadow-inner text-slate-700"
                 placeholder={t.placeholder} rows={4} value={myAnswer} onChange={(e) => setMyAnswer(e.target.value)}
               ></textarea>
               <button onClick={handleSubmit} disabled={!myAnswer.trim() || isSubmitting} className={`w-full py-3.5 md:py-4 rounded-2xl font-bold transition-all shadow-sm ${myAnswer.trim() ? 'btn-cute text-white hover:scale-[1.02]' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}>

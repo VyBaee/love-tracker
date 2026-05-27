@@ -69,7 +69,7 @@ export default function IntroScreen({ showAuth, onStart, onBack, locale, setLoca
   // =========================================================================
   const renderIntroPanel = (key: string) => (
     <div key={key} className="h-1/3 w-full flex flex-col lg:flex-row relative flex-shrink-0">
-      
+
       {/* CỘT VĂN BẢN (TRÁI) */}
       {/* ĐÃ FIX: Thêm h-full để đẩy Text ra chính giữa màn hình Mobile */}
       {/* SỬA UI: Tăng padding ngang trên cả điện thoại (px-10) và laptop/pc (lg:px-16) để hiển thị đẹp hơn */}
@@ -146,14 +146,14 @@ export default function IntroScreen({ showAuth, onStart, onBack, locale, setLoca
   // =========================================================================
   const renderAuthPanel = () => (
     <div key="panel-auth" className="h-1/3 w-full flex flex-col lg:flex-row relative flex-shrink-0 overflow-hidden">
-      
+
       {/* NỬA TRÁI: Tính năng nổi bật (Chỉ hiện trên PC) */}
       <div className="hidden lg:flex w-full lg:w-1/2 flex-col justify-center p-6 lg:px-12 pr-12 z-10 max-w-2xl mx-auto">
         <p className="text-xs font-black text-theme-500 uppercase tracking-widest mb-2">Premium Security & Experience</p>
         <h2 className={`text-3xl font-black mb-8 leading-snug ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
           Không gian số lưu trữ <br />trọn vẹn hồi ức của hai người.
         </h2>
-        
+
         <div className="space-y-6">
           <div className="flex items-start gap-4">
             <div className={`p-3 rounded-2xl flex-shrink-0 text-xl shadow-sm border ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-theme-100'}`}>🔒</div>
@@ -185,7 +185,7 @@ export default function IntroScreen({ showAuth, onStart, onBack, locale, setLoca
 
       {/* NỬA PHẢI: Khung Auth + Polaroids bay nhảy */}
       <div className="w-full lg:w-1/2 flex items-center justify-center relative p-6 h-full">
-        
+
         {/* Polaroids Bay Lơ lửng (Chỉ hiện PC) */}
         <div className={`absolute top-[10%] left-[10%] w-24 p-2 rounded-xl border shadow-lg rotate-[-12deg] pointer-events-none hidden xl:block transition-all duration-700 animate-bounce ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-white'}`} style={{ animationDuration: '6s' }}>
           <div className="w-full aspect-square bg-slate-200 dark:bg-slate-800 rounded-md overflow-hidden mb-2">
@@ -221,8 +221,9 @@ export default function IntroScreen({ showAuth, onStart, onBack, locale, setLoca
       <FloatingHearts />
 
       {/* Nền trang trí chung */}
-      <div className={`absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full mix-blend-multiply filter blur-[100px] animate-blob ${isDarkMode ? 'bg-pink-900/20' : 'bg-theme-400/20'}`}></div>
-      <div className={`absolute top-[20%] right-[-10%] w-[400px] h-[400px] rounded-full mix-blend-multiply filter blur-[100px] animate-blob animation-delay-2000 ${isDarkMode ? 'bg-purple-900/20' : 'bg-purple-400/20'}`}></div>
+      {/* Thêm pointer-events-none vào 2 thẻ này */}
+      <div className={`pointer-events-none absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full mix-blend-multiply filter blur-[100px] animate-blob ${isDarkMode ? 'bg-pink-900/20' : 'bg-theme-400/20'}`}></div>
+      <div className={`pointer-events-none absolute top-[20%] right-[-10%] w-[400px] h-[400px] rounded-full mix-blend-multiply filter blur-[100px] animate-blob animation-delay-2000 ${isDarkMode ? 'bg-purple-900/20' : 'bg-purple-400/20'}`}></div>
 
       {/* NAVBAR */}
       <nav className="w-full flex items-center justify-between p-6 lg:px-12 relative z-50 flex-shrink-0">
@@ -257,17 +258,17 @@ export default function IntroScreen({ showAuth, onStart, onBack, locale, setLoca
 
       {/* BĂNG CHUYỀN TRƯỢT (SLIDER CONTAINER) */}
       <div className="flex-1 w-full relative overflow-hidden z-10">
-        <div 
+        <div
           className={`w-full flex flex-col ${animate ? 'transition-transform duration-[1200ms] cubic-bezier(0.4, 0, 0.2, 1)' : ''}`}
           style={{ height: '300%', transform: `translateY(-${(step * 100) / 3}%)` }}
           onTransitionEnd={handleTransitionEnd}
         >
           {/* Tầng 1: Intro */}
           {renderIntroPanel('panel-1')}
-          
+
           {/* Tầng 2: Auth */}
           {renderAuthPanel()}
-          
+
           {/* Tầng 3: Intro (Bản sao để cuộn vô tận) */}
           {renderIntroPanel('panel-3')}
         </div>
