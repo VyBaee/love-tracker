@@ -29,7 +29,7 @@ export async function GET() {
 
     console.log("🔍 Đã tìm thấy các Model hợp lệ:", validModels);
 
-    const prompt = "Hãy đóng vai một chuyên gia tâm lý tình yêu. Viết 1 câu hỏi ngắn gọn, lãng mạn, sâu sắc hoặc hài hước dành cho các cặp đôi yêu nhau để họ trả lời hàng ngày. Chỉ trả về đúng 1 câu hỏi, không giải thích gì thêm. Không dùng ngoặc kép. Tối đa 20 chữ.";
+    const prompt = "Hãy đóng vai một chuyên gia tâm lý tình yêu. Viết 1 câu hỏi ngắn gọn, lãng mạn, sâu sắc hoặc hài hước, đôi lúc đánh sâu vào tâm lý cá nhân dành cho các cặp đôi yêu nhau để họ trả lời hàng ngày, lưu ý những ngày kỉ niệm để đặt câu hỏi phù hợp với ngữ cảnh. Chỉ trả về đúng 1 câu hỏi, không giải thích gì thêm. Không dùng ngoặc kép. Tối đa 20 chữ.";
 
     let finalQuestion = null;
     let lastError = null;
